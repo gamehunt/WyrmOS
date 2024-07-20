@@ -1,7 +1,9 @@
 includes = include_directories('include')
 
 srcs = [
-  'src/kernel.c',
+  'asm.c',
+  'kernel.c',
+  'dev/serial.c',
 ]
 link_script = meson.current_source_dir() / 'link.ld'
 
@@ -14,32 +16,14 @@ executable(
     'elf64',
     '-Wall'
   ],
-  c_args: [
-    '-Wall',
-    '-Wextra',
-    '-std=gnu11', 
-    '-ffreestanding',
-    '-fno-stack-protector',
-    '-fno-stack-check', 
-    '-fno-lto',
-    '-fPIE',
-    '-m64', 
-    '-march=x86-64', 
-    '-mno-80387', 
-    '-mno-mmx', 
-    '-mno-sse', 
-    '-mno-sse2', 
-    '-mno-red-zone',
-    '-g',
-    '-O2',
-    '-pipe'
-  ],
+  c_args: c_args_freestanding,
   link_args: [
     '-T', link_script, 
     '-nostdlib', 
     '-pie',
   ],
   link_depends: link_script,
+  dependencies: [libk_dep],
   install: true,
   install_dir: 'boot'
 )
