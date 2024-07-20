@@ -1,0 +1,7 @@
+tools/cross
+tools/limine
+.cache
+*/.cache
+build
+*/build
+tools/image.hdd
