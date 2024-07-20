@@ -1,3 +1,3 @@
 meson compile -C build
-meson install -C build
+sudo -u root meson install -C build
 

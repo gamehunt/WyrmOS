@@ -76,9 +76,28 @@ function setup_hdd {
 	sgdisk image.hdd -N 2           -t 2:8300
 
 	sudo -u root kpartx -a image.hdd
+	
 	sudo -u root mkfs.fat -F 32 /dev/mapper/loop0p1
 	sudo -u root mkfs.ext4 /dev/mapper/loop0p2
+
+	mkdir -p /tmp/wyrmos_root
+	sudo -u root mount /dev/mapper/loop0p1 /tmp/wyrmos_root 
+
+	./limine/limine bios-install image.hdd
+
+	sudo -u root mkdir -p /tmp/wyrmos_root/EFI/BOOT
+	sudo -u root mkdir -p /tmp/wyrmos_root/boot/limine
+
+	sudo -u root cp limine/limine-bios.sys /tmp/wyrmos_root/boot/limine/
+	sudo -u root cp limine/BOOTX64.EFI /tmp/wyrmos_root/EFI/BOOT/
+	sudo -u root cp limine/BOOTIA32.EFI /tmp/wyrmos_root/EFI/BOOT/
+
+	sudo -u root umount /tmp/wyrmos_root
 	sudo -u root kpartx -d image.hdd
+
+	sudo -u root rm -rf /tmp/wyrmos_root
+
+	sync
 }
 
 mkdir -p cross/prefix

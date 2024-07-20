@@ -2,5 +2,5 @@ project('WyrmOS', ['c', 'nasm'])
 
 subdir('kernel')
 
-meson.add_install_script('image.sh')
+meson.add_install_script('sync-image.sh')
 
