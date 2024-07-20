@@ -68,6 +68,7 @@ void _start(void) {
         fb_ptr[i * (framebuffer->pitch / 4) + i] = 0xff0000;
     }
 
+	DEBUG_INIT();
 	DEBUG_PUTSTR("TEST!\r\n");
 
     // We're done, just hang...

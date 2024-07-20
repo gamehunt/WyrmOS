@@ -3,6 +3,7 @@
 
 #include <dev/serial.h>
 
+#define DEBUG_INIT() k_dev_serial_init(COM1)
 #define DEBUG_PUTCHAR(c) k_dev_serial_putchar(COM1, c)
 #define DEBUG_PUTSTR(str) k_dev_serial_putstr(COM1, str)
 

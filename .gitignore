@@ -5,3 +5,4 @@ tools/limine
 build
 */build
 tools/image.hdd
+run/
