@@ -29,3 +29,10 @@ uint32_t inl(uint16_t port) { // 32bit port input
   asm volatile("inl %1, %0" : "=a"(ret) : "Nd"(port));
   return ret;
 }
+
+void hcf(void) {
+    asm ("cli");
+    for (;;) {
+        asm ("hlt");
+    }
+}

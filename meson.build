@@ -25,6 +25,8 @@ c_args_freestanding = [
     '-pipe'
 ]
 
+kernel_includes = include_directories('kernel/include')
+
 subdir('lib')
 subdir('kernel')
 

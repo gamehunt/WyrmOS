@@ -1,7 +1,6 @@
-includes = include_directories('include')
-
 srcs = [
   'asm.c',
+  'globals.c',
   'kernel.c',
   'dev/serial.c',
 ]
@@ -10,7 +9,7 @@ link_script = meson.current_source_dir() / 'link.ld'
 executable(
   'wyrm.bin',
   sources: srcs,
-  include_directories: includes,
+  include_directories: kernel_includes,
   nasm_args: [
     '-f',
     'elf64',
