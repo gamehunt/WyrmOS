@@ -30,6 +30,29 @@ static volatile LIMINE_REQUESTS_START_MARKER;
 __attribute__((used, section(".requests_end_marker")))
 static volatile LIMINE_REQUESTS_END_MARKER;
 
+static const char* mmap_type2str(int type) {
+	switch(type) {
+		case LIMINE_MEMMAP_USABLE:
+			return "Usable";
+		case LIMINE_MEMMAP_RESERVED:
+			return "RESERVED";
+		case LIMINE_MEMMAP_ACPI_RECLAIMABLE:
+			return "ACPI RECLAIMABLE";
+		case LIMINE_MEMMAP_ACPI_NVS:
+			return "ACPI_NVS";
+		case LIMINE_MEMMAP_BAD_MEMORY:
+			return "BAD";
+		case LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE:
+			return "BOOTLOADER RECLAIMABLE";
+		case LIMINE_MEMMAP_KERNEL_AND_MODULES:
+			return "KERNEL";
+		case LIMINE_MEMMAP_FRAMEBUFFER:
+			return "FRAMEBUFFER";
+		default:
+			return "UNKNOWN";
+	}
+}
+
 void _start(void) {
 	DEBUG_INIT();
 	DEBUG_PUTSTR("WyrmOS Kernel loading...\r\n");
@@ -46,7 +69,7 @@ void _start(void) {
 		DEBUG_PUTSTR("Memory map found.\r\n");
 		for(uint64_t i = 0; i < memmap_request.response->entry_count; i++) {
 			struct limine_memmap_entry* entry = memmap_request.response->entries[i];
-			printf("Mmap entry: %#.16lX - %#.16lX - %d\r\n", entry->base, entry->base + entry->length, entry->type);
+			printf("Mmap entry: %#.16lX - %#.16lX - %s\r\n", entry->base, entry->base + entry->length, mmap_type2str(entry->type));
 		}
 	}
 
