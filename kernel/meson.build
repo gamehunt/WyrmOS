@@ -1,8 +1,12 @@
 srcs = [
   'asm.c',
+  'cpu/interrupt.c',
+  'dev/serial.c',
   'globals.c',
   'kernel.c',
-  'dev/serial.c',
+  'mem/mem.c',
+  'mem/paging.c',
+  'mem/pmm.c',
 ]
 link_script = meson.current_source_dir() / 'link.ld'
 
