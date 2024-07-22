@@ -48,7 +48,7 @@ void _start(void) {
     	}
 	}
 
-	// k_mem_init();
+	k_mem_init();
 
 end:
     hcf();

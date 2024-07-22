@@ -6,6 +6,7 @@ srcs = [
   'kernel.c',
   'mem/mem.c',
   'mem/paging.c',
+  'mem/paging.asm',
   'mem/pmm.c',
 ]
 link_script = meson.current_source_dir() / 'link.ld'
@@ -22,8 +23,7 @@ executable(
   c_args: c_args_freestanding,
   link_args: [
     '-T', link_script, 
-    '-nostdlib', 
-    '-pie',
+    '-nostdlib' 
   ],
   link_depends: link_script,
   dependencies: [libk_dep],

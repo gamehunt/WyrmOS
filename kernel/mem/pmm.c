@@ -15,10 +15,10 @@ static volatile struct limine_memmap_request memmap_request = {
 
 extern void* _kernel_end;
 
-static uint64_t* __pmm_mem_bitmap  = (uint64_t*) ((addr) &_kernel_end + 0x1000);
-static size_t    __pmm_bitmap_size = 0;
+static uint64_t* __pmm_mem_bitmap        = 0;
+static size_t    __pmm_bitmap_size       = 0;
 static size_t    __pmm_bitmap_free_index = 0;
-static uint8_t   __pmm_initialized = 0;
+static uint8_t   __pmm_initialized       = 0;
 
 static const char* mmap_type2str(int type) {
 	switch(type) {

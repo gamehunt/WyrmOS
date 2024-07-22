@@ -63,7 +63,4 @@ SECTIONS
         *(.note .note.*)
         *(.interp)
     }
-
-    . = ALIGN(CONSTANT(MAXPAGESIZE));
-	_kernel_end = .;
 }
