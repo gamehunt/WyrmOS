@@ -30,9 +30,17 @@ uint32_t inl(uint16_t port) { // 32bit port input
   return ret;
 }
 
-void hcf(void) {
-    asm ("cli");
+__attribute__((noreturn)) void hcf(void) {
+    asm volatile ("cli");
     for (;;) {
         asm ("hlt");
     }
+}
+
+void cli(void) {
+	asm volatile("cli");
+}
+
+void sti(void) {
+	asm volatile("sti");
 }

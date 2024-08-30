@@ -34,5 +34,8 @@ int atoi(const char* str) {
 }
 
 void abort(void) {
-	while(1);
+#ifdef __LIBK
+#include "panic.h"
+	panic("abort() called.");
+#endif
 }

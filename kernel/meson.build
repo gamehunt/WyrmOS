@@ -1,9 +1,12 @@
 srcs = [
   'asm.c',
+  'cpu/interrupt.asm',
   'cpu/interrupt.c',
   'dev/serial.c',
   'globals.c',
   'kernel.c',
+  'panic.c',
+  'mem/mem.asm',
   'mem/mem.c',
   'mem/paging.c',
   'mem/paging.asm',

@@ -39,5 +39,6 @@ int k_mem_paging_init();
 union page* k_mem_paging_get_current_pml();
 
 void k_mem_paging_map(addr vaddr, addr paddr);
+void k_mem_paging_unmap(addr vaddr);
 
 #endif

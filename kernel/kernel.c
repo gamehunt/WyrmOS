@@ -1,10 +1,8 @@
-#include "mem/paging.h"
+#include "cpu/interrupt.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-
 #include <stdio.h>
-#include <string.h>
 
 #include <boot/limine.h>
 #include <mem/mem.h>
@@ -37,21 +35,8 @@ void _start(void) {
 		goto end;
     }
 
-    if (framebuffer_request.response == NULL
-    	    || framebuffer_request.response->framebuffer_count < 1) {
-		printf("Framebuffer not found.\r\n");
-	} else {
-    	struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-
-    	for (size_t i = 0; i < framebuffer->height; i++) {
-    	    volatile uint32_t *fb_ptr = framebuffer->address;
-    	    fb_ptr[i * (framebuffer->pitch / 4) + i] = 0xff0000;
-    	}
-	}
-
 	k_mem_init();
-
-	k_mem_paging_map(0x8040201000, 0);
+	k_cpu_int_init();
 
 end:
     hcf();
