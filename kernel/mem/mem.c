@@ -7,6 +7,6 @@
 int k_mem_init() {
 	int r;
 	_R(k_mem_paging_init(), r)
-	// _R(k_mem_pmm_init(), r)
+	_R(k_mem_pmm_init(), r)
 	return 0;
 }

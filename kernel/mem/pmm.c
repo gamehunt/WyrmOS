@@ -1,10 +1,15 @@
-#include <mem/pmm.h>
+#include "mem/paging.h"
 
 #include <stdio.h>
-#include <boot/limine.h>
+#include <assert.h>
 
-#define FRAME_INDEX(frame) (frame / 64)
-#define FRAME_BIT(frame)   (frame % 64)
+#include <mem/pmm.h>
+#include <boot/limine.h>
+#include <string.h>
+#include <util.h>
+
+#define FRAME_INDEX(frame)      (frame / 64)
+#define FRAME_BIT(frame)        (frame % 64)
 #define FRAME_FROM(index, bit)  (bit + index * 64)
 
 __attribute__((used, section(".requests")))
@@ -13,12 +18,10 @@ static volatile struct limine_memmap_request memmap_request = {
     .revision = 0
 };
 
-extern void* _kernel_end;
-
-static uint64_t* __pmm_mem_bitmap        = 0;
-static size_t    __pmm_bitmap_size       = 0;
-static size_t    __pmm_bitmap_free_index = 0;
-static uint8_t   __pmm_initialized       = 0;
+static uint64_t*  __pmm_mem_bitmap        = 0;
+static size_t     __pmm_bitmap_size       = 0;
+static size_t     __pmm_bitmap_free_index = 0;
+static uint8_t    __pmm_initialized       = 0;
 
 static const char* mmap_type2str(int type) {
 	switch(type) {
@@ -43,6 +46,24 @@ static const char* mmap_type2str(int type) {
 	}
 }
 
+static uint64_t* allocate_pmm_bitmap(uint64_t size) {
+	assert(size % 0x1000 == 0);
+	uint64_t result = 0;
+	for(uint64_t i = 0; i < memmap_request.response->entry_count; i++) {
+		struct limine_memmap_entry* entry = memmap_request.response->entries[i];
+		if(entry->type == LIMINE_MEMMAP_USABLE && entry->length >= size) {
+			result = TO_VIRTUAL(entry->base);
+			entry->base   += size;
+			entry->length -= size;
+			if(!entry->length) {
+				entry->type = LIMINE_MEMMAP_KERNEL_AND_MODULES;
+			}
+			break;
+		}
+	}
+	return (uint64_t*) result;
+}
+
 int k_mem_pmm_init() {
 	if(memmap_request.response == NULL 
 			|| memmap_request.response->entry_count < 1) {
@@ -50,20 +71,22 @@ int k_mem_pmm_init() {
 		return -1;
 	} else {
 		printf("Memory map found.\r\n");
+		struct limine_memmap_entry* last_entry = memmap_request.response->entries[memmap_request.response->entry_count - 1];
+		uint64_t required_bitmap_size = FRAME_INDEX(FRAME(last_entry->base + last_entry->length));
+		uint64_t required_bytes = ALIGN(required_bitmap_size * 8, PAGE_SIZE);
+		printf("Required bitmap size: %ld bytes (%ld index).\r\n", required_bytes, required_bitmap_size);
+		__pmm_mem_bitmap  = allocate_pmm_bitmap(required_bytes);
+		memset(__pmm_mem_bitmap, 0, required_bytes);
+		printf("Allocated bitmap at %#.16lx.\r\n", __pmm_mem_bitmap);
 		for(uint64_t i = 0; i < memmap_request.response->entry_count; i++) {
 			struct limine_memmap_entry* entry = memmap_request.response->entries[i];
-			printf("Mmap entry: %#.16lX - %#.16lX - %s\r\n", entry->base, entry->base + entry->length, mmap_type2str(entry->type));
-			
+			printf("Mmap entry: %#.16lx - %#.16lx - %s (%ld pages)\r\n", entry->base, entry->base + entry->length, mmap_type2str(entry->type), entry->length / PAGE_SIZE);
 			if(entry->type == LIMINE_MEMMAP_USABLE) {
 				k_mem_pmm_mark_region(FRAME(entry->base), entry->length / 0x1000);
 			}
 		}
 	}
-
 	__pmm_initialized = 1;
-
-	printf("Bitmap size: %dB\r\n", __pmm_bitmap_size * sizeof(uint64_t));
-
 	return 0;
 }
 
@@ -79,16 +102,17 @@ int k_mem_pmm_mark_frame(frame frame) {
 
 	if(index > __pmm_bitmap_size) {
 		if(!__pmm_initialized) {
-			for(size_t i = __pmm_bitmap_size; i < index + 1; i++) {
-				__pmm_mem_bitmap[i] = 0;
-			}
 			__pmm_bitmap_size = index + 1;
 		} else {
 			return -1;
 		}
 	}
 
-	__pmm_mem_bitmap[index] |= (1 << FRAME_BIT(frame));
+	__pmm_mem_bitmap[index] |= ((uint64_t)1 << FRAME_BIT(frame));
+	if(!__pmm_mem_bitmap[__pmm_bitmap_free_index]) {
+		__pmm_bitmap_free_index = index;
+	}
+
 	return 0;
 }
 
@@ -105,8 +129,8 @@ frame k_mem_pmm_alloc(size_t frames) {
     uint8_t found   = 0;
 
     for (size_t i = __pmm_bitmap_free_index; i < __pmm_bitmap_size; i++) {
-        for (size_t j = 0; j < sizeof(__pmm_mem_bitmap[0]) * 8; j++) {
-            if (__pmm_mem_bitmap[i] & (1 << j)) {
+        for (size_t j = 0; j < 64; j++) {
+            if (__pmm_mem_bitmap[i] & ((uint64_t)1 << j)) {
                 if (!found_frames) {
                     frame_n = FRAME_FROM(i, j);
                 }
@@ -127,7 +151,7 @@ frame k_mem_pmm_alloc(size_t frames) {
     if (found) {
         for (size_t i = 0; i < frames; i++) {
             frame target_frame = frame_n + i;
-            __pmm_mem_bitmap[FRAME_INDEX(target_frame)] &= ~(1 << FRAME_BIT(target_frame));
+            __pmm_mem_bitmap[FRAME_INDEX(target_frame)] &= ~((uint64_t)1 << FRAME_BIT(target_frame));
         }
 
         while (__pmm_bitmap_free_index < __pmm_bitmap_size 

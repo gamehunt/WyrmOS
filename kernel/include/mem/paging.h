@@ -9,7 +9,8 @@
 #define _page_aligned __attribute__((aligned(PAGE_SIZE)))
 
 #define HIGH_MAP __high_map_addr
-#define TO_VIRTUAL(phys) phys | HIGH_MAP
+#define TO_VIRTUAL(phys)  (phys | HIGH_MAP)
+#define TO_PHYSICAL(virt) (virt & ~(HIGH_MAP)) // Works only for addresses, obtained with TO_VIRTUAL
 
 union page {
     struct {
@@ -36,5 +37,7 @@ extern addr __high_map_addr;
 int k_mem_paging_init();
 
 union page* k_mem_paging_get_current_pml();
+
+void k_mem_paging_map(addr vaddr, addr paddr);
 
 #endif

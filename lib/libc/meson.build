@@ -1,6 +1,7 @@
 includes = include_directories('include')
 
 srcs = [
+  'assert.c',
   'ctype/ctype.c',
   'string/memory.c',
   'string/string.c',

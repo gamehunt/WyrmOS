@@ -8,8 +8,8 @@
 
 typedef uint64_t frame;
 
-#define FRAME(addr) (addr / 0x1000)
-#define ADDR(frame) (frame * 0x1000)
+#define FRAME(addr) ((addr) / 0x1000)
+#define ADDR(frame) ((frame) * 0x1000)
 
 #define palloc(frames) ADDR(k_mem_pmm_alloc(frames))
 

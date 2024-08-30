@@ -6,3 +6,4 @@ build
 */build
 tools/image.hdd
 run/
+.nvim/

@@ -253,6 +253,7 @@ static int __vprintf_generic(const char* format, va_list arg_ptr, __char_emitter
 	uint8_t flags = 0;
 	int written   = 0;
 	__printf_params params;
+	__printf_clear_params(&params);
 	while(*format) {
 		char c = *format;
 

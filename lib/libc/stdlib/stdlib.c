@@ -32,3 +32,7 @@ int atoi(const char* str) {
 
 	return r;
 }
+
+void abort(void) {
+	while(1);
+}

@@ -1,3 +1,4 @@
+#include "mem/paging.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -49,6 +50,8 @@ void _start(void) {
 	}
 
 	k_mem_init();
+
+	k_mem_paging_map(0x8040201000, 0);
 
 end:
     hcf();
