@@ -60,19 +60,17 @@ ISR 	35
 ISR 	36
 ISR 	37
 ISR 	38
-ISR 	39 ; 7
-ISR 	40
+ISR 	39
+ISR 	40 ; 8
 ISR 	41
 ISR 	42
 ISR 	43
 ISR 	44
 ISR 	45
 ISR 	46
-ISR 	47 ; 15
+ISR 	47 ; 16
 
 extern __dispatch_interrupt
-
-global interrupt_stub:
 interrupt_stub:
 	push rax
 	push rbx

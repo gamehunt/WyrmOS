@@ -1,6 +1,8 @@
 #ifndef __K_PANIC_H
 #define __K_PANIC_H 1
 
-void panic(const char* message, ...) __attribute__((noreturn));
+#include "cpu/interrupt.h"
+
+void panic(regs* registers, const char* message, ...) __attribute__((noreturn));
 
 #endif

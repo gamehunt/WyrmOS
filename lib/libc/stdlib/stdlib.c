@@ -1,6 +1,7 @@
+#include <stdlib.h>
 #include <ctype.h>
 #include <stdint.h>
-#include <stdlib.h>
+#include <stddef.h>
 
 int atoi(const char* str) {
 	const char* end = str;	
@@ -36,6 +37,6 @@ int atoi(const char* str) {
 void abort(void) {
 #ifdef __LIBK
 #include "panic.h"
-	panic("abort() called.");
+	panic(NULL, "abort() called.");
 #endif
 }

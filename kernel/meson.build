@@ -1,5 +1,6 @@
 srcs = [
   'asm.c',
+  'cpu/pic.c',
   'cpu/interrupt.asm',
   'cpu/interrupt.c',
   'dev/serial.c',
