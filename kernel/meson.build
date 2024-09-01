@@ -9,6 +9,7 @@ srcs = [
   'panic.c',
   'mem/mem.asm',
   'mem/mem.c',
+  'mem/alloc.c',
   'mem/paging.c',
   'mem/paging.asm',
   'mem/pmm.c',

@@ -1,6 +1,7 @@
 #ifndef __K_MEM_PAGING_H
 #define __K_MEM_PAGING_H 1
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include <mem/mem.h>
@@ -39,6 +40,8 @@ int k_mem_paging_init();
 union page* k_mem_paging_get_current_pml();
 
 void k_mem_paging_map(addr vaddr, addr paddr);
+void k_mem_paging_map_pages(addr vaddr, size_t pages, addr paddr);
+void k_mem_paging_map_region(addr vaddr_start, addr vaddr_end, addr paddr);
 void k_mem_paging_unmap(addr vaddr);
 
 #endif

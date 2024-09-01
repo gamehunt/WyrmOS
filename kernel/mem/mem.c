@@ -22,7 +22,7 @@ union descriptor {
 	uint64_t raw;
 };
 
-union  descriptor gdt[3];
+union  descriptor gdt[5];
 struct gdtptr     gdt_pointer;
 
 union descriptor __encode_descriptor(uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
@@ -66,6 +66,19 @@ static void __init_descriptors() {
 											 ACC_PRESENT, 
 											 FL_LONG | 
 											 FL_GRAN); // Kernel Data 0x10
+	gdt[3] = __encode_descriptor(0, 0xFFFFF, ACC_RW   | 
+											 ACC_TYPE | 
+											 ACC_EXEC |
+											 ACC_USER |
+											 ACC_PRESENT, 
+											 FL_LONG | 
+											 FL_GRAN); // User Code 0x18
+	gdt[4] = __encode_descriptor(0, 0xFFFFF, ACC_RW   | 
+											 ACC_TYPE | 
+											 ACC_USER |
+											 ACC_PRESENT, 
+											 FL_LONG | 
+											 FL_GRAN); // User Data 0x20
 
 	load_descriptor_table(&gdt_pointer);
 	reload_segments();

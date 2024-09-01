@@ -1,4 +1,5 @@
 #include "mem/paging.h"
+#include "panic.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -119,8 +120,7 @@ int k_mem_pmm_mark_frame(frame frame) {
 frame k_mem_pmm_alloc(size_t frames) {
 
     if (__pmm_bitmap_free_index >= __pmm_bitmap_size) {
-		//OUT OF MEM
-		return 0;
+		panic(NULL, "Out of memory.");
     }
 
     size_t found_frames = 0;
@@ -171,6 +171,5 @@ frame k_mem_pmm_alloc(size_t frames) {
         return ADDR(frame_n);
     }
 
-	//OUT OF MEM
-	return 0;
+	panic(NULL, "Out of memory.");
 }

@@ -1,4 +1,5 @@
 #include "cpu/interrupt.h"
+#include "mem/alloc.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -16,6 +17,13 @@ __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
     .id = LIMINE_FRAMEBUFFER_REQUEST,
     .revision = 0
+};
+
+__attribute__((used, section(".requests")))
+static volatile struct limine_paging_mode_request paging_mode_request = {
+    .id = LIMINE_PAGING_MODE_REQUEST,
+    .revision = 0,
+	.mode = LIMINE_PAGING_MODE_X86_64_4LVL
 };
 
 __attribute__((used, section(".requests_start_marker")))
