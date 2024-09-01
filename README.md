@@ -1,22 +1,22 @@
-#WyrmOS
+# WyrmOS
 
 Concept: Hybrid Kernel with kernel module support
 
 
-#Install required tools
+## Install required tools
 
 ```
 cd tools
 ./setup_env.sh
 ```
 
-#Build
+## Build
 
 ```
 source tools/env.sh
 ./rebuild_and_launch.sh
 ```
 
-#Launch without rebuild
+## Launch without rebuild
 
 `./launch.sh`

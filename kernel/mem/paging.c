@@ -54,6 +54,7 @@ void k_mem_paging_map(addr vaddr, addr paddr) {
 		uint16_t index = layers[i];
 		if(!pg[index].bits.present) {
 			union page p; 
+			p.raw = 0;
 			p.bits.present  = 1;
 			p.bits.writable = 1;
 			p.bits.user     = 0;

@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
@@ -7,6 +8,43 @@ size_t strlen(const char *str)
 	register const char *s;
 	for (s = str; *s; ++s);
 	return(s - str);
+}
+
+char* strcpy(char* destination, const char* source){
+    if (destination == NULL) {
+        return NULL;
+    }
+ 
+    char *ptr = destination;
+ 
+    while (*source != '\0')
+    {
+        *destination = *source;
+        destination++;
+        source++;
+    }
+ 
+    *destination = '\0';
+ 
+    return ptr;
+}
+
+char* strncpy(char* destination, const char* source, size_t num) {
+    if (destination == NULL) {
+        return NULL;
+    }
+ 
+    char* ptr = destination;
+ 
+    while (*source && num--)
+    {
+        *destination = *source;
+        destination++;
+        source++;
+    }
+ 
+    *destination = '\0';
+    return ptr;
 }
 
 char* strcat(char* destination, const char* source){
@@ -241,13 +279,9 @@ long strtol(const char *nptr, char **endptr, int base) {
 }
 
 char *strdup(const char *str){
-#ifndef __LIBK
     char* buff = malloc(strlen(str) + 1);
     strcpy(buff, str);
 	return buff;
- #else
-	return NULL;
-#endif
 }
 
 char *strchr(const char *s, int c){

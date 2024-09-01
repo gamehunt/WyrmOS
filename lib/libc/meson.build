@@ -6,7 +6,8 @@ srcs = [
   'string/memory.c',
   'string/string.c',
   'stdio/printf.c',
-  'stdlib/stdlib.c'
+  'stdlib/stdlib.c',
+  'stdlib/alloc.c'
 ]
 
 # library('libc', 'source.c')

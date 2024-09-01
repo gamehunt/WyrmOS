@@ -227,18 +227,15 @@ struct slab* __get_slab(size_t bytes) {
 	return r;
 }
 
-void* kmalloc(size_t bytes) {
+void* __attribute__ ((malloc))  kmalloc(size_t bytes) {
 	assert(bytes > 0);
-	for(int i = 1; i < MAX_SLAB_SIZE; i++) {
-		__slab_for_size(i);
-	}
 	struct slab* s = __get_slab(bytes);
 	void* item = __slab_pop(s);
 	return item;
 }
 
 // For page-aligned allocations
-void* vmalloc(size_t bytes) {
+void* __attribute__ ((malloc)) vmalloc(size_t bytes) {
 	uintptr_t true_size = bytes + PAGE_SIZE - sizeof(struct slab); /* Here we go... */
 	void * result = kmalloc(true_size);
 	void * out = (void *)((uintptr_t)result + (PAGE_SIZE) - sizeof(struct slab));

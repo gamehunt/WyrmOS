@@ -1,5 +1,3 @@
-#include "cpu/interrupt.h"
-#include "mem/alloc.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -7,6 +5,8 @@
 
 #include <boot/limine.h>
 #include <mem/mem.h>
+#include <cpu/interrupt.h>
+#include <fs/fs.h>
 #include <asm.h>
 #include <debug.h>
 
@@ -45,6 +45,7 @@ void _start(void) {
 
 	k_mem_init();
 	k_cpu_int_init();
+	k_fs_init();
 
 end:
     hcf();

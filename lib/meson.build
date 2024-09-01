@@ -1,1 +1,2 @@
 subdir('libc')
+subdir('types')

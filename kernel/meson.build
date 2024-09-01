@@ -13,6 +13,8 @@ srcs = [
   'mem/paging.c',
   'mem/paging.asm',
   'mem/pmm.c',
+  'fs/fs.c',
+  'fs/path.c'
 ]
 link_script = meson.current_source_dir() / 'link.ld'
 
@@ -31,7 +33,7 @@ executable(
     '-nostdlib' 
   ],
   link_depends: link_script,
-  dependencies: [libk_dep],
+  dependencies: [libk_dep, ktypes_dep],
   install: true,
   install_dir: 'boot'
 )

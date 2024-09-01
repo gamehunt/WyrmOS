@@ -3,10 +3,10 @@
 
 #include <stddef.h>
 
-void* kmalloc(size_t bytes);
+void* __attribute__((malloc)) kmalloc(size_t bytes);
 
 // For page-aligned allocations
-void* vmalloc(size_t bytes);
+void* __attribute__((malloc)) vmalloc(size_t bytes);
 
 void  kfree(void* mem);
 
