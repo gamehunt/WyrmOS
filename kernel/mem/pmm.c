@@ -1,3 +1,4 @@
+#include "dev/log.h"
 #include "mem/paging.h"
 #include "panic.h"
 
@@ -68,20 +69,20 @@ static uint64_t* allocate_pmm_bitmap(uint64_t size) {
 int k_mem_pmm_init() {
 	if(memmap_request.response == NULL 
 			|| memmap_request.response->entry_count < 1) {
-		printf("Memory map not found.\r\n");
+		k_warn("Memory map not found.");
 		return -1;
 	} else {
-		printf("Memory map found.\r\n");
+		k_info("Memory map found.");
 		struct limine_memmap_entry* last_entry = memmap_request.response->entries[memmap_request.response->entry_count - 1];
 		uint64_t required_bitmap_size = FRAME_INDEX(FRAME(last_entry->base + last_entry->length));
 		uint64_t required_bytes = ALIGN(required_bitmap_size * 8, PAGE_SIZE);
-		printf("Required bitmap size: %ld bytes (%ld index).\r\n", required_bytes, required_bitmap_size);
+		k_info("Required bitmap size: %ld bytes (%ld index).", required_bytes, required_bitmap_size);
 		__pmm_mem_bitmap  = allocate_pmm_bitmap(required_bytes);
 		memset(__pmm_mem_bitmap, 0, required_bytes);
-		printf("Allocated bitmap at %#.16lx.\r\n", __pmm_mem_bitmap);
+		k_info("Allocated bitmap at %#.16lx.", __pmm_mem_bitmap);
 		for(uint64_t i = 0; i < memmap_request.response->entry_count; i++) {
 			struct limine_memmap_entry* entry = memmap_request.response->entries[i];
-			printf("Mmap entry: %#.16lx - %#.16lx - %s (%ld pages)\r\n", entry->base, entry->base + entry->length, mmap_type2str(entry->type), entry->length / PAGE_SIZE);
+			k_info("Mmap entry: %#.16lx - %#.16lx - %s (%ld pages)", entry->base, entry->base + entry->length, mmap_type2str(entry->type), entry->length / PAGE_SIZE);
 			if(entry->type == LIMINE_MEMMAP_USABLE) {
 				k_mem_pmm_mark_region(FRAME(entry->base), entry->length / 0x1000);
 			}

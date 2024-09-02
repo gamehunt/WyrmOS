@@ -1,3 +1,4 @@
+#include "dev/log.h"
 #include "types/list.h"
 #include <fs/fs.h>
 #include <fs/path.h>
@@ -31,9 +32,7 @@ static int8_t __callback_comparator(void* a, void* b) {
 }
 
 static fs_node* __open_vfs(vfs_node* _node) {
-	fs_node* node = malloc(sizeof(fs_node));
-	memset(node, 0, sizeof(fs_node));
-	strcpy(node->name, _node->name);
+	fs_node* node = k_fs_alloc_fsnode(_node->name);
 	node->meta = _node;
 	node->size = 0;
 	node->fsid = VFS_FSID;
@@ -119,19 +118,35 @@ void k_fs_create_mapping(const char *path) {
 	__k_fs_create_mapping(path);
 }
 
+void k_fs_mount_node(const char* path, fs_node* node) {
+	vfs_node* n = __k_fs_create_mapping(path);
+	if(n->root != NULL) {
+		k_error("%s: already mounted.", path);
+		return;
+	}
+	n->root = node;
+}
+
 fs_node* k_fs_mount(const char* _path, const char* device, const char* type) {
 	fs_node* dev = k_fs_open(device);
 
 	if(!dev) {
+		k_error("%s: device not found\r\n", device);
 		return NULL;
 	}
 
 	mount callback = __get_mount_callback(type);
 	if(!callback) {
+		k_error("Attempted to mount %s to %s with unknown fs type %s.\r\n", _path, device, type);
 		return NULL;
 	}
 
 	vfs_node* node = __k_fs_create_mapping(_path);
+	if(node->root != NULL) {
+		k_error("%s: already mounted.", _path);
+		return NULL;
+	}
+
 	node->root = dev;
 
 	path* path = path_parse(_path);
@@ -185,4 +200,11 @@ size_t k_fs_write(fs_node* node, size_t offset, size_t bytes, uint8_t* buffer) {
 		return node->ops.write(node, offset, bytes, buffer);
 	}
 	return 0;
+}
+
+fs_node*  k_fs_alloc_fsnode(const char* name) {
+	fs_node* node = malloc(sizeof(fs_node));
+	memset(node, 0, sizeof(fs_node));
+	strncpy(node->name, name, FS_NODE_NAME_LENGTH);
+	return node;
 }

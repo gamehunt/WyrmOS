@@ -4,6 +4,7 @@ srcs = [
   'cpu/interrupt.asm',
   'cpu/interrupt.c',
   'dev/serial.c',
+  'dev/log.c',
   'globals.c',
   'kernel.c',
   'panic.c',

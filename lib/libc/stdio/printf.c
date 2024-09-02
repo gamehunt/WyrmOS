@@ -5,18 +5,14 @@
 #include <string.h>
 
 #ifdef __LIBK
-#include<globals.h>
-#include<debug.h>
+#include <globals.h>
+#include <dev/log.h>
 #endif
 
 int putchar(int ch) {
 #ifdef __LIBK
-	if(__k_early) {
-		DEBUG_PUTCHAR(ch);
-		return ch;
-	} else {
-		//TODO
-	}
+	k_print("%c", ch);
+	return ch;
 #endif
 	return EOF;
 }

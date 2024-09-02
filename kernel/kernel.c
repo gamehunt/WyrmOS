@@ -1,3 +1,5 @@
+#include "dev/log.h"
+#include "panic.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -36,16 +38,20 @@ static volatile LIMINE_REQUESTS_END_MARKER;
 void _start(void) {
 	DEBUG_INIT();
 
-	printf("WyrmOS Kernel loading...\r\n");
+	k_info("WyrmOS Kernel loading...\r\n");
 
     if (!LIMINE_BASE_REVISION_SUPPORTED) {
-		printf("Unsupported LIMINE revision\r\n");
+		k_error("Unsupported LIMINE revision\r\n");
 		goto end;
     }
 
 	k_mem_init();
 	k_cpu_int_init();
 	k_fs_init();
+
+	k_dev_log_init();
+
+	asm("int $0x1");
 
 end:
     hcf();
