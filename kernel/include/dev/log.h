@@ -1,6 +1,8 @@
 #ifndef __K_DEV_LOG_H
 #define __K_DEV_LOG_H 1
 
+#include <symbols.h>
+
 struct _fs_node;
 
 enum LOG_LEVEL {
@@ -13,7 +15,7 @@ enum LOG_LEVEL {
 	CRITICAL
 };
 
-void             k_dev_log_init();
+INTERNAL void    k_dev_log_init();
 struct _fs_node* k_dev_log_get();
 void             k_dev_log(enum LOG_LEVEL level, const char* format, ...);
 

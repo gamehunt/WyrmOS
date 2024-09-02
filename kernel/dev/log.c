@@ -8,6 +8,8 @@
 
 #define LOG_BUFFER_SIZE 1024
 
+EXPORT(k_dev_log)
+
 static fs_node* __k_logdev = NULL;
 const char* __log_prefixes[] = {
 	[PRINT]    = "",

@@ -1,5 +1,6 @@
 srcs = [
   'asm.c',
+  'symbols.c',
   'cpu/pic.c',
   'cpu/interrupt.asm',
   'cpu/interrupt.c',
@@ -29,10 +30,13 @@ executable(
     'elf64',
     '-Wall'
   ],
-  c_args: c_args_freestanding,
+  c_args: [
+    c_args_freestanding,
+    '-D__KERNEL'
+  ],
   link_args: [
     '-T', link_script, 
-    '-nostdlib' 
+    '-nostdlib',
   ],
   link_depends: link_script,
   dependencies: [libk_dep, ktypes_dep],

@@ -1,4 +1,6 @@
 #include "exec/initrd.h"
+#include "panic.h"
+#include <symbols.h>
 #include <asm.h>
 #include <boot/limine.h>
 #include <cpu/interrupt.h>
@@ -6,9 +8,6 @@
 #include <dev/log.h>
 #include <fs/fs.h>
 #include <mem/mem.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 __attribute__((used, section(".requests")))
 static volatile LIMINE_BASE_REVISION(2);
@@ -38,8 +37,7 @@ static volatile LIMINE_REQUESTS_START_MARKER;
 __attribute__((used, section(".requests_end_marker")))
 static volatile LIMINE_REQUESTS_END_MARKER;
 
-
-void _start(void) {
+void kernel_main(void) {
 	DEBUG_INIT();
 
 	k_info("WyrmOS Kernel loading...\r\n");
@@ -53,6 +51,7 @@ void _start(void) {
 	k_cpu_int_init();
 	k_fs_init();
 	k_dev_log_init();
+	k_setup_symbols();
 
 	if(!module_request.response || !module_request.response->module_count) {
 		k_error("Failed to load initrd.");
@@ -72,3 +71,9 @@ void _start(void) {
 end:
     hcf();
 }
+
+void _start(void) {
+	kernel_main();
+}
+
+EXPORT_INTERNAL(kernel_main)

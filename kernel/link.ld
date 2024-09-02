@@ -33,6 +33,7 @@ SECTIONS
     .data : {
         *(.data .data.*)
 
+
         /* Place the sections that contain the Limine requests as part of the .data */
         /* output section. */
         KEEP(*(.requests_start_marker))
@@ -45,6 +46,12 @@ SECTIONS
         *(.dynamic)
     } :data :dynamic
 
+	.kernel_exported : {
+		__kernel_exports_start = .;
+		*(.kernel_exported)
+		__kernel_exports_end = .;
+	} :data
+
     /* NOTE: .bss needs to be the last thing mapped to :data, otherwise lots of */
     /* unnecessary zeros will be written to the binary. */
     /* If you need, for example, .init_array and .fini_array, those should be placed */
@@ -53,6 +60,8 @@ SECTIONS
         *(.bss .bss.*)
         *(COMMON)
     } :data
+
+
 
     /* Discard .note.* and .eh_frame* since they may cause issues on some hosts. */
     /* Also discard the program interpreter section since we do not need one. This is */
