@@ -1,6 +1,7 @@
 #include <dev/serial.h>
 #include <asm.h>
 #include <string.h>
+#include <symbols.h>
 
 int k_dev_serial_init(uint16_t port) {
 	outb(port + 1, 0x00);    // Disable all interrupts
@@ -50,3 +51,12 @@ void k_dev_serial_write(uint16_t port, char* buff, uint32_t size){
 void k_dev_serial_putstr(uint16_t port, const char* buff) {
 	k_dev_serial_write(port, buff, strlen(buff));
 }
+
+EXPORT(k_dev_serial_init)
+EXPORT(k_dev_serial_read)
+EXPORT(k_dev_serial_write)
+EXPORT(k_dev_serial_putchar)
+EXPORT(k_dev_serial_putstr)
+EXPORT(k_dev_serial_received)
+EXPORT(k_dev_serial_is_transmit_empty)
+

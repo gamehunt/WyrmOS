@@ -51,3 +51,7 @@ void k_cpu_pic_irq_ack(uint8_t irq) {
 	}
 	outb(PIC1_COMMAND, PIC_EOI);
 }
+
+EXPORT(k_cpu_pic_irq_ack)
+
+EXPORT_INTERNAL(k_cpu_pic_init)

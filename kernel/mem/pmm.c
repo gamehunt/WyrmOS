@@ -174,3 +174,9 @@ frame k_mem_pmm_alloc(size_t frames) {
 
 	panic(NULL, "Out of memory.");
 }
+
+EXPORT_INTERNAL(k_mem_pmm_init)
+
+EXPORT(k_mem_pmm_alloc)
+EXPORT(k_mem_pmm_mark_frame)
+EXPORT(k_mem_pmm_mark_region)

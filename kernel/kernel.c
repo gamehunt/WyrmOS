@@ -1,5 +1,7 @@
+#include "exec/elf.h"
 #include "exec/initrd.h"
 #include "panic.h"
+#include <stdlib.h>
 #include <symbols.h>
 #include <asm.h>
 #include <boot/limine.h>
@@ -67,6 +69,23 @@ void kernel_main(void) {
 	}
 
 	k_fs_mount("/", "/dev/ram0", "initrd");
+
+	fs_node* mod = k_fs_open("/initrd/modules/testmod.wrm");
+	if(mod) {
+		void* buffer = malloc(mod->size);
+		k_fs_read(mod, 0, mod->size, buffer);
+		struct module_info* module = k_elf_load_module(buffer);
+		if(module) {
+			k_info("%#.16lx", module);
+			k_info("Module: %s", module->name);
+			module->load();
+			k_info("Loaded.");
+		} else {
+			k_error("Failed to load module.");
+		}
+	} else {
+		k_error("Failed to find module.");
+	}
 
 end:
     hcf();

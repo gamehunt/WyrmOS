@@ -2,6 +2,7 @@
 #include "mem/pmm.h"
 #include "cpu/interrupt.h"
 #include "panic.h"
+#include "symbols.h"
 #include <boot/limine.h>
 #include <assert.h>
 
@@ -108,3 +109,11 @@ void k_mem_paging_unmap(addr vaddr) {
 		}
 	}
 }
+
+EXPORT(k_mem_paging_map)
+EXPORT(k_mem_paging_unmap)
+EXPORT(k_mem_paging_map_pages)
+EXPORT(k_mem_paging_map_region)
+EXPORT(k_mem_paging_get_current_pml)
+
+EXPORT_INTERNAL(k_mem_paging_init)

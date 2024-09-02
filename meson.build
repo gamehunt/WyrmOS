@@ -29,6 +29,7 @@ kernel_includes = include_directories('kernel/include')
 
 subdir('lib')
 subdir('kernel')
+subdir('modules')
 
 meson.add_install_script('initrd.sh')
 meson.add_install_script('sync-image.sh')

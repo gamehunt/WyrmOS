@@ -1,15 +1,6 @@
 #include <asm.h>
 #include <symbols.h>
 
-EXPORT(cli)
-EXPORT(sti)
-EXPORT(outb)
-EXPORT(outw)
-EXPORT(outl)
-EXPORT(inb)
-EXPORT(inw)
-EXPORT(inl)
-EXPORT(hcf)
 
 void outb(uint16_t port, uint8_t value) { // 8bit port output
   asm volatile("outb %1, %0" : : "dN"(port), "a"(value));
@@ -56,3 +47,12 @@ void sti(void) {
 	asm volatile("sti");
 }
 
+EXPORT(cli)
+EXPORT(sti)
+EXPORT(outb)
+EXPORT(outw)
+EXPORT(outl)
+EXPORT(inb)
+EXPORT(inw)
+EXPORT(inl)
+EXPORT(hcf)

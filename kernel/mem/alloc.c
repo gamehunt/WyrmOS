@@ -26,6 +26,7 @@ static void*  heap = (void*) HEAP_START;
 static struct slab* slabs[SLAB_AMOUNT] = { NULL };
 static struct slab* free_slabs = NULL;
 
+
 static void* __sbrk(size_t pages) {
 	assert(pages > 0);
 
@@ -258,3 +259,19 @@ void kfree(void* mem) {
 		__slab_push(s, mem);
 	}
 }
+
+EXPORT(kfree);
+EXPORT(vmalloc);
+EXPORT(kmalloc);
+
+EXPORT_INTERNAL(__allocate_slab);
+EXPORT_INTERNAL(__allocate_big_slab);
+EXPORT_INTERNAL(__slab_push);
+EXPORT_INTERNAL(__slab_pop);
+EXPORT_INTERNAL(__tail);
+EXPORT_INTERNAL(__sbrk);
+EXPORT_INTERNAL(__try_get_free_slab);
+EXPORT_INTERNAL(__try_get_big_free_slab);
+EXPORT_INTERNAL(__insert_slab);
+EXPORT_INTERNAL(__insert_free_slab);
+EXPORT_INTERNAL(__free_big_slab);

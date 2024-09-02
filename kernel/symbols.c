@@ -21,6 +21,8 @@ void k_setup_symbols() {
 
 	__symtable_size = bytes / sizeof(symbol);
 	memcpy(__symtable, &__kernel_exports_start, bytes);
+
+	k_verbose("Symtable occupies %d bytes (%d symbols)", bytes, __symtable_size);
 }
 
 symbol* k_lookup_symbol(const char* name) {
@@ -53,3 +55,9 @@ symbol* k_find_nearest_symbol(uintptr_t address) {
 	}
 	return nearest;
 }
+
+EXPORT(k_lookup_symbol)
+
+EXPORT_INTERNAL(k_setup_symbols)
+EXPORT_INTERNAL(k_find_nearest_symbol)
+

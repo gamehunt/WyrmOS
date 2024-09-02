@@ -1,6 +1,7 @@
 #ifndef __K_CPU_INTERRUPT_H
 #define __K_CPU_INTERRUPT_H 1
 
+#include <symbols.h>
 #include <stdint.h>
 
 #define IRQ_BASE  32
@@ -20,7 +21,7 @@ typedef struct registers regs;
 
 typedef void(*interrupt_handler)(regs*);
 
-void k_cpu_int_init();
+INTERNAL void k_cpu_int_init();
 void k_cpu_int_setup_handler(uint8_t interrupt, interrupt_handler handler);
 
 #define k_cpu_int_setup_isr_handler(isr, handler) k_cpu_int_setup_handler(isr, handler)

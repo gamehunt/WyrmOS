@@ -10,12 +10,9 @@
 #include <stdio.h>
 
 #define PANIC_WIDTH 20
-#define MAX_STACKTRACE_DEPTH 32
-#define MAX_STACKTRACE_LINE_LENGTH 256
 
 extern const char* __log_prefixes[];
 
-EXPORT(panic);
 
 struct stackframe {
   struct stackframe* rbp;
@@ -24,9 +21,7 @@ struct stackframe {
 
 
 static void __stacktrace(uintptr_t stack) {
-	static char buffers[MAX_STACKTRACE_DEPTH][MAX_STACKTRACE_LINE_LENGTH] = {0};
 	struct stackframe* frame = (struct stackframe*) stack;
-	int depth = 0;
 	while(frame && frame->rip) {
 		symbol* nearest = k_find_nearest_symbol(frame->rip);
 		const char* src = "unknown";
@@ -40,12 +35,8 @@ static void __stacktrace(uintptr_t stack) {
 		} else if (frame->rip >= VIRTUAL_BASE) {
 			src = "@internal";
 		}
-		snprintf(buffers[depth], sizeof(buffers[depth]), "%#.16lx: <%s + %#lx>", frame->rip, src, offset);
+		k_crit("%#.16lx: <%s + %#lx>", frame->rip, src, offset);
 		frame = frame->rbp;
-		depth++;
-	}
-	for(int i = depth - 1; i >= 0; i--) {
-		k_crit("%s", buffers[i]);
 	}
 }
 
@@ -79,3 +70,6 @@ __attribute__((noreturn)) void panic(regs* r, const char* message, ...){
 
 	hcf();
 }
+
+EXPORT(panic);
+EXPORT_INTERNAL(__stacktrace);

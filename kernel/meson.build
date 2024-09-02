@@ -17,7 +17,8 @@ srcs = [
   'mem/pmm.c',
   'fs/fs.c',
   'fs/path.c',
-  'exec/initrd.c'
+  'exec/initrd.c',
+  'exec/elf.c',
 ]
 link_script = meson.current_source_dir() / 'link.ld'
 

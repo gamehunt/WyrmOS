@@ -8,8 +8,6 @@
 
 #define LOG_BUFFER_SIZE 1024
 
-EXPORT(k_dev_log)
-
 static fs_node* __k_logdev = NULL;
 const char* __log_prefixes[] = {
 	[PRINT]    = "",
@@ -57,3 +55,8 @@ void k_dev_log(enum LOG_LEVEL level, const char* format, ...) {
 
 	__print_callback(__k_logdev, 0, bytes, (uint8_t*) buffer2);
 }
+
+EXPORT(k_dev_log)
+
+EXPORT_INTERNAL(k_dev_log_init)
+EXPORT_INTERNAL(__k_log_write)

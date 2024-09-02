@@ -94,3 +94,6 @@ int k_mem_init() {
 
 	return 0;
 }
+
+EXPORT_INTERNAL(k_mem_init);
+EXPORT_INTERNAL(__init_descriptors);

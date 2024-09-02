@@ -1,5 +1,5 @@
-#include "dev/log.h"
 #include "fs/fs.h"
+#include "symbols.h"
 #include "types/list.h"
 #include <exec/initrd.h>
 
@@ -120,3 +120,11 @@ int k_exec_initrd_load(void* address, size_t size) {
 	k_fs_mount_node(path, node);
 	return 0;
 }
+
+EXPORT(k_exec_initrd_load)
+
+EXPORT_INTERNAL(__ram_read)
+EXPORT_INTERNAL(__initrd_open)
+EXPORT_INTERNAL(__initrd_mount_callback)
+EXPORT_INTERNAL(__parse_tar_module)
+EXPORT_INTERNAL(k_exec_initrd_init)

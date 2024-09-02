@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <symbols.h>
 
 path* path_parse(const char* _path) {
 	path* p = path_create();
@@ -60,3 +61,9 @@ path* path_join(path* p, const char* part) {
 	return p;
 }
 
+EXPORT(path_build)
+EXPORT(path_parse)
+EXPORT(path_free)
+EXPORT(path_join)
+EXPORT(path_filename)
+EXPORT(path_folder)

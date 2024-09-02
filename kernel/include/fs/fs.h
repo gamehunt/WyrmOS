@@ -8,6 +8,7 @@
 #include <stddef.h>
 
 #include <fs/path.h>
+#include <symbols.h>
 
 struct _fs_node;
 typedef struct {
@@ -28,7 +29,8 @@ typedef struct _fs_node{
 
 typedef fs_node*(*mount)(const char* name, fs_node* device);
 
-void     k_fs_init();
+INTERNAL void k_fs_init();
+
 void     k_fs_create_mapping(const char* path);
 fs_node* k_fs_mount(const char* path, const char* device, const char* type);
 void     k_fs_mount_node(const char* path, fs_node* node);
@@ -38,9 +40,9 @@ void     k_fs_close(fs_node* node);
 size_t   k_fs_read(fs_node* node, size_t offset, size_t bytes, uint8_t* buffer);
 size_t   k_fs_write(fs_node* node, size_t offset, size_t bytes, uint8_t* buffer);
 
-void      k_fs_register(const char* alias, mount mount_callback);
-fs_node*  k_fs_alloc_fsnode(const char* name);
+void     k_fs_register(const char* alias, mount mount_callback);
+fs_node* k_fs_alloc_fsnode(const char* name);
 
-void k_fs_print_tree();
+void     k_fs_print_tree();
 
 #endif
