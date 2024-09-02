@@ -32,13 +32,19 @@ char* path_build(path* p) {
 		required_size += strlen(pr->value);
 	}
 	char* path = malloc(required_size);
+	memset(path, 0, required_size);
 	foreach(pr, p) {
 		strcat(path, pr->value);
+		strcat(path, "/");
 	}
+	path[strlen(path) - 1] = '\0';
 	return path;
 }
 
 char* path_filename(path* p) {
+	if(!p->tail) {
+		return NULL;
+	}
 	return strdup(p->tail->value);
 }
 

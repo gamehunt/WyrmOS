@@ -23,8 +23,8 @@ static list* __mount_callbacks;
 
 static int8_t __vfs_node_comparator(void* _a, void* _b) {
 	vfs_node* a = (vfs_node*) _a;	
-	vfs_node* b = (vfs_node*) _b;	
-	return strcmp(a->name, b->name);
+	char* b = (char*) _b;	
+	return strcmp(a->name, b);
 }
 
 static int8_t __callback_comparator(void* a, void* b) {
@@ -71,6 +71,10 @@ static void __k_fs_print_vfs_node(vfs_node* node, int depth) {
 	foreach(c, node->owner->children) {
 		__k_fs_print_vfs_node(((tree*)c->value)->value, depth + 1);
 	}
+}
+
+void k_fs_print_tree() {
+	__k_fs_print_vfs_node(__vfs_tree->value, 0);
 }
 
 void k_fs_init() {
@@ -125,13 +129,14 @@ void k_fs_mount_node(const char* path, fs_node* node) {
 		return;
 	}
 	n->root = node;
+	k_info("Mounted: %s", path);
 }
 
 fs_node* k_fs_mount(const char* _path, const char* device, const char* type) {
 	fs_node* dev = k_fs_open(device);
 
 	if(!dev) {
-		k_error("%s: device not found\r\n", device);
+		k_error("%s: device not found", device);
 		return NULL;
 	}
 
@@ -147,17 +152,9 @@ fs_node* k_fs_mount(const char* _path, const char* device, const char* type) {
 		return NULL;
 	}
 
-	node->root = dev;
+	node->root = callback(node->name, dev);
 
-	path* path = path_parse(_path);
-	char* name = path_filename(path);
-
-	fs_node* mountpoint = callback(name, dev);
-
-	free(name);
-	path_free(path);
-
-	return mountpoint;
+	return node->root;
 }
 
 fs_node* k_fs_open(const char* _path) {
@@ -172,8 +169,8 @@ fs_node* k_fs_open(const char* _path) {
 			} else {
 				result = mountpoint->root;
 			}
-		} else if(mountpoint->root){
-			result = mountpoint->root->ops.open(left);
+		} else if(mountpoint->root && mountpoint->root->ops.open){
+			result = mountpoint->root->ops.open(mountpoint->root, left);
 		}
 	}
 	path_free(left);

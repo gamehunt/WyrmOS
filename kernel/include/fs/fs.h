@@ -11,7 +11,7 @@
 
 struct _fs_node;
 typedef struct {
-	struct _fs_node*(*open)(path*);
+	struct _fs_node*(*open)(struct _fs_node* root, path*);
 	void   (*close)(struct _fs_node*);
 	size_t (*read)(struct _fs_node*, size_t, size_t, uint8_t*);
 	size_t (*write)(struct _fs_node*, size_t, size_t, uint8_t*);
@@ -40,5 +40,7 @@ size_t   k_fs_write(fs_node* node, size_t offset, size_t bytes, uint8_t* buffer)
 
 void      k_fs_register(const char* alias, mount mount_callback);
 fs_node*  k_fs_alloc_fsnode(const char* name);
+
+void k_fs_print_tree();
 
 #endif

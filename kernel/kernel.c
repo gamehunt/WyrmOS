@@ -1,16 +1,14 @@
-#include "dev/log.h"
-#include "panic.h"
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
-#include <stdio.h>
-
-#include <boot/limine.h>
-#include <mem/mem.h>
-#include <cpu/interrupt.h>
-#include <fs/fs.h>
+#include "exec/initrd.h"
 #include <asm.h>
+#include <boot/limine.h>
+#include <cpu/interrupt.h>
 #include <debug.h>
+#include <dev/log.h>
+#include <fs/fs.h>
+#include <mem/mem.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 __attribute__((used, section(".requests")))
 static volatile LIMINE_BASE_REVISION(2);
@@ -26,6 +24,12 @@ static volatile struct limine_paging_mode_request paging_mode_request = {
     .id = LIMINE_PAGING_MODE_REQUEST,
     .revision = 0,
 	.mode = LIMINE_PAGING_MODE_X86_64_4LVL
+};
+
+__attribute__((used, section(".requests")))
+static volatile struct limine_module_request module_request = {
+    .id = LIMINE_MODULE_REQUEST,
+    .revision = 0,
 };
 
 __attribute__((used, section(".requests_start_marker")))
@@ -48,10 +52,22 @@ void _start(void) {
 	k_mem_init();
 	k_cpu_int_init();
 	k_fs_init();
-
 	k_dev_log_init();
 
-	asm("int $0x1");
+	if(!module_request.response || !module_request.response->module_count) {
+		k_error("Failed to load initrd.");
+		goto end;
+	}
+
+	k_exec_initrd_init();
+
+	struct limine_file** initrds = module_request.response->modules;
+	for(size_t i = 0; i < module_request.response->module_count; i++) {
+		k_info("Loading initrd: %s - %#.16lx - %#.16lx", initrds[i]->path, initrds[i]->address, initrds[i]->address + initrds[i]->size);
+		k_exec_initrd_load(initrds[i]->address, initrds[i]->size);
+	}
+
+	k_fs_mount("/", "/dev/ram0", "initrd");
 
 end:
     hcf();
