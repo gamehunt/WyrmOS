@@ -235,12 +235,11 @@ void* __attribute__ ((malloc))  kmalloc(size_t bytes) {
 	return item;
 }
 
-// For page-aligned allocations
-void* __attribute__ ((malloc)) vmalloc(size_t bytes) {
-	uintptr_t true_size = bytes + PAGE_SIZE - sizeof(struct slab); /* Here we go... */
+void* __attribute__ ((malloc)) kmalloc_aligned(size_t bytes, size_t align) {
+	uintptr_t true_size = bytes + align - sizeof(struct slab);
 	void * result = kmalloc(true_size);
-	void * out = (void *)((uintptr_t)result + (PAGE_SIZE) - sizeof(struct slab));
-	assert((uintptr_t) out % PAGE_SIZE == 0);
+	void * out = (void *)((uintptr_t)result + (align) - sizeof(struct slab));
+	assert((uintptr_t) out % align == 0);
 	return out;
 }
 
@@ -261,17 +260,5 @@ void kfree(void* mem) {
 }
 
 EXPORT(kfree);
-EXPORT(vmalloc);
+EXPORT(kmalloc_aligned);
 EXPORT(kmalloc);
-
-EXPORT_INTERNAL(__allocate_slab);
-EXPORT_INTERNAL(__allocate_big_slab);
-EXPORT_INTERNAL(__slab_push);
-EXPORT_INTERNAL(__slab_pop);
-EXPORT_INTERNAL(__tail);
-EXPORT_INTERNAL(__sbrk);
-EXPORT_INTERNAL(__try_get_free_slab);
-EXPORT_INTERNAL(__try_get_big_free_slab);
-EXPORT_INTERNAL(__insert_slab);
-EXPORT_INTERNAL(__insert_free_slab);
-EXPORT_INTERNAL(__free_big_slab);

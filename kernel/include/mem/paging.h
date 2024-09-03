@@ -38,7 +38,11 @@ extern addr __high_map_addr;
 int k_mem_paging_init();
 
 union page* k_mem_paging_get_current_pml();
+union page* k_mem_paging_get_root_pml();
+union page* k_mem_paging_clone_pml(union page* pml);
+void        k_mem_paging_set_pml(union page* pml);
 
+uintptr_t k_mem_paging_get_physical(addr vaddr);
 void k_mem_paging_map(addr vaddr, addr paddr);
 void k_mem_paging_map_pages(addr vaddr, size_t pages, addr paddr);
 void k_mem_paging_map_region(addr vaddr_start, addr vaddr_end, addr paddr);

@@ -72,4 +72,3 @@ __attribute__((noreturn)) void panic(regs* r, const char* message, ...){
 }
 
 EXPORT(panic);
-EXPORT_INTERNAL(__stacktrace);

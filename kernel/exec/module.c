@@ -46,5 +46,3 @@ int k_load_modules() {
 
 	return 0;
 }
-
-EXPORT_INTERNAL(k_load_modules)

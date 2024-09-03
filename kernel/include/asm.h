@@ -13,8 +13,8 @@ uint32_t inl(uint16_t port);
 
 void hcf(void) __attribute__((noreturn));
 
-void cli(void);
-void sti(void);
+#define cli(void) asm("cli")
+#define sti(void) asm("sti")
 
 
 #endif

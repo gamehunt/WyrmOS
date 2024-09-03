@@ -57,6 +57,3 @@ void k_dev_log(enum LOG_LEVEL level, const char* format, ...) {
 }
 
 EXPORT(k_dev_log)
-
-EXPORT_INTERNAL(k_dev_log_init)
-EXPORT_INTERNAL(__k_log_write)

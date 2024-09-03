@@ -176,9 +176,3 @@ int k_exec_initrd_load(void* address, size_t size) {
 }
 
 EXPORT(k_exec_initrd_load)
-
-EXPORT_INTERNAL(__ram_read)
-EXPORT_INTERNAL(__initrd_open)
-EXPORT_INTERNAL(__initrd_mount_callback)
-EXPORT_INTERNAL(__parse_tar_module)
-EXPORT_INTERNAL(k_exec_initrd_init)

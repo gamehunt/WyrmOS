@@ -25,6 +25,6 @@ INTERNAL void k_cpu_int_init();
 void k_cpu_int_setup_handler(uint8_t interrupt, interrupt_handler handler);
 
 #define k_cpu_int_setup_isr_handler(isr, handler) k_cpu_int_setup_handler(isr, handler)
-#define k_cpu_int_setup_irq_handler(irq, handler) k_cpu_int_setup_handler(IRQ(irq), handler)
+#define k_cpu_int_setup_irq_handler(irq, handler) k_cpu_int_setup_handler(IRQ_TO_INT(irq), handler)
 
 #endif

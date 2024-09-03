@@ -76,6 +76,8 @@ void kernel_main(void) {
 	k_load_modules();
 	k_process_init();
 
+	k_debug("Here");
+
 	while(1);
 
 	int r = k_exec("/bin/init", 0, NULL, NULL);
@@ -94,5 +96,3 @@ void _start(void) {
 	__k_initial_stack = get_rsp();
 	kernel_main();
 }
-
-EXPORT_INTERNAL(kernel_main)

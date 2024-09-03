@@ -57,7 +57,3 @@ symbol* k_find_nearest_symbol(uintptr_t address) {
 }
 
 EXPORT(k_lookup_symbol)
-
-EXPORT_INTERNAL(k_setup_symbols)
-EXPORT_INTERNAL(k_find_nearest_symbol)
-

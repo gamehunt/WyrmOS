@@ -86,5 +86,3 @@ void k_cpu_pic_unmask_irq(uint8_t irq) {
 EXPORT(k_cpu_pic_irq_ack)
 EXPORT(k_cpu_pic_mask_irq)
 EXPORT(k_cpu_pic_unmask_irq)
-
-EXPORT_INTERNAL(k_cpu_pic_init)

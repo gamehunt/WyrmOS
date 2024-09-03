@@ -39,16 +39,6 @@ __attribute__((noreturn)) void hcf(void) {
     }
 }
 
-void cli(void) {
-	asm volatile("cli");
-}
-
-void sti(void) {
-	asm volatile("sti");
-}
-
-EXPORT(cli)
-EXPORT(sti)
 EXPORT(outb)
 EXPORT(outw)
 EXPORT(outl)

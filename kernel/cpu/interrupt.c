@@ -176,6 +176,3 @@ void k_cpu_int_setup_handler(uint8_t interrupt, interrupt_handler handler) {
 }
 
 EXPORT(k_cpu_int_setup_handler)
-
-EXPORT_INTERNAL(k_cpu_int_init)
-EXPORT_INTERNAL(__dispatch_interrupt)

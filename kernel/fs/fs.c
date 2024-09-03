@@ -225,7 +225,3 @@ EXPORT(k_fs_register)
 EXPORT(k_fs_mount)
 EXPORT(k_fs_mount_node)
 EXPORT(k_fs_print_tree)
-
-EXPORT_INTERNAL(k_fs_init)
-EXPORT_INTERNAL(__k_fs_create_mapping)
-EXPORT_INTERNAL(__get_mountpoint)

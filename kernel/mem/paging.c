@@ -1,10 +1,12 @@
 #include <mem/paging.h>
+#include "mem/alloc.h"
 #include "mem/pmm.h"
 #include "cpu/interrupt.h"
 #include "panic.h"
 #include "symbols.h"
 #include <boot/limine.h>
 #include <assert.h>
+#include <string.h>
 
 #define PME(addr) ((uint16_t) ((((uint64_t) addr & CANONICAL_MASK) >> 39) & 0x1FF))
 #define PDP(addr) ((uint16_t) ((((uint64_t) addr & CANONICAL_MASK) >> 30) & 0x1FF))
@@ -19,7 +21,8 @@ static volatile struct limine_hhdm_request hhdm_request = {
 
 addr __high_map_addr = 0;
 
-union page* __pml = 0;
+union page* __root_pml = NULL;
+union page* __pml      = NULL;
 
 extern union page* __get_pml(uint64_t map);
 extern addr __get_pagefault_address();
@@ -31,12 +34,17 @@ static void __handle_pagefault(regs* r) {
 int k_mem_paging_init() {
 	__high_map_addr = hhdm_request.response->offset;
 	__pml           = __get_pml(__high_map_addr);
+	__root_pml      = __pml;
 	k_cpu_int_setup_handler(14, __handle_pagefault);
 	return 0;
 }
 
 union page* k_mem_paging_get_current_pml() {
 	return __pml;
+}
+
+union page* k_mem_paging_get_root_pml() {
+	return __root_pml;
 }
 
 void k_mem_paging_map(addr vaddr, addr paddr) {
@@ -110,10 +118,54 @@ void k_mem_paging_unmap(addr vaddr) {
 	}
 }
 
+uintptr_t k_mem_paging_get_physical(addr vaddr) {
+	uint16_t pme = PME(vaddr);
+	uint16_t pdp = PDP(vaddr);
+	uint16_t pde = PDE(vaddr);
+	uint16_t pte = PTE(vaddr);
+
+	assert(pme <= 512 && pdp <= 512 && pde <= 512 && pte <= 512);
+
+	uint16_t layers[4] = {pme, pdp, pde, pte};
+
+	union page* pg = __pml;
+
+	for(int i = 0; i < 4; i++) {
+		uint16_t index = layers[i];
+		if(!pg[index].bits.present) {
+			return 0;
+		}
+		if(i < 3) {
+			pg = (union page*) TO_VIRTUAL(ADDR(pg[index].bits.page));
+		} else {
+			return ADDR(pg[index].bits.page);
+		}
+	}
+
+	return 0;
+}
+
+union page* k_mem_paging_clone_pml(union page* pml) {
+	union page* copy = vmalloc(PAGE_SIZE);
+	if(!pml) {
+		pml = __root_pml;
+	}
+	memcpy(copy, pml, PAGE_SIZE);
+	return copy;
+}
+
+extern void __set_pml(uintptr_t phys);
+
+void k_mem_paging_set_pml(union page* pml) {
+	__pml = pml;
+	__set_pml(k_mem_paging_get_physical((addr) pml));
+}
+
 EXPORT(k_mem_paging_map)
 EXPORT(k_mem_paging_unmap)
 EXPORT(k_mem_paging_map_pages)
 EXPORT(k_mem_paging_map_region)
 EXPORT(k_mem_paging_get_current_pml)
-
-EXPORT_INTERNAL(k_mem_paging_init)
+EXPORT(k_mem_paging_clone_pml)
+EXPORT(k_mem_paging_set_pml)
+EXPORT(k_mem_paging_get_physical)
