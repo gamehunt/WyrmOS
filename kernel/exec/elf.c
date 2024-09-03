@@ -190,8 +190,9 @@ struct module_info* k_elf_load_module(void* elf) {
 	return module;
 }
 
-void k_elf_exec(void* file) {
+int k_elf_exec(void* file, int argc, const char** argv, const char** envp) {
 	// TODO
+	return -1;
 }
 
 EXPORT(k_elf_check)

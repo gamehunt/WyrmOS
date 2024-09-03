@@ -1,5 +1,8 @@
+#include "exec/exec.h"
 #include "exec/initrd.h"
 #include "exec/module.h"
+#include "panic.h"
+#include "proc/process.h"
 #include <symbols.h>
 #include <asm.h>
 #include <globals.h>
@@ -57,8 +60,7 @@ void kernel_main(void) {
 	k_setup_symbols();
 
 	if(!module_request.response || !module_request.response->module_count) {
-		k_error("Failed to load initrd.");
-		goto end;
+		panic(NULL, "Failed to load initrd.");
 	}
 
 	k_exec_initrd_init();
@@ -72,6 +74,17 @@ void kernel_main(void) {
 	k_fs_mount("/", "/dev/ram0", "initrd");
 
 	k_load_modules();
+	k_process_init();
+
+	while(1);
+
+	int r = k_exec("/bin/init", 0, NULL, NULL);
+
+	if(r != 0) {
+		panic(NULL, "Failed to execute init process");
+	}
+
+	panic(NULL, "Init process died.");
 
 end:
     hcf();

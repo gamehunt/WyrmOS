@@ -6,6 +6,7 @@ srcs = [
   'cpu/interrupt.c',
   'dev/serial.c',
   'dev/log.c',
+  'dev/pit.c',
   'globals.c',
   'kernel.c',
   'panic.c',
@@ -19,7 +20,9 @@ srcs = [
   'fs/path.c',
   'exec/initrd.c',
   'exec/elf.c',
-  'exec/module.c'
+  'exec/module.c',
+  'exec/exec.c',
+  'proc/process.c'
 ]
 link_script = meson.current_source_dir() / 'link.ld'
 

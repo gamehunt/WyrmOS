@@ -43,6 +43,9 @@ void k_cpu_pic_init() {
 	/* Request 8086 mode on each PIC */
 	OUTB(PIC1_DATA, 0x01); 
 	OUTB(PIC2_DATA, 0x01); 
+
+	OUTB(PIC1_DATA, 0xFB);
+    OUTB(PIC2_DATA, 0xFF);
 }
 
 void k_cpu_pic_irq_ack(uint8_t irq) {
@@ -52,6 +55,36 @@ void k_cpu_pic_irq_ack(uint8_t irq) {
 	outb(PIC1_COMMAND, PIC_EOI);
 }
 
+void k_cpu_pic_mask_irq(uint8_t irq) {
+    uint16_t port;
+    uint8_t value;
+ 
+    if(irq < 8) {
+        port = PIC1_DATA;
+    } else {
+        port = PIC2_DATA;
+        irq -= 8;
+    }
+    value = inb(port) | (1 << irq);
+    OUTB(port, value);        
+}
+ 
+void k_cpu_pic_unmask_irq(uint8_t irq) {
+    uint16_t port;
+    uint8_t value;
+ 
+    if(irq < 8) {
+        port = PIC1_DATA;
+    } else {
+        port = PIC2_DATA;
+        irq -= 8;
+    }
+    value = inb(port) & ~(1 << irq);
+    OUTB(port, value);        
+}
+
 EXPORT(k_cpu_pic_irq_ack)
+EXPORT(k_cpu_pic_mask_irq)
+EXPORT(k_cpu_pic_unmask_irq)
 
 EXPORT_INTERNAL(k_cpu_pic_init)
