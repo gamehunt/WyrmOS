@@ -20,23 +20,57 @@ uint8_t k_elf_check(void* elf) {
 	return ident->class;
 }
 
-static shdr64* __k_elf_find_section(elf64* elf, const char* section) {
-	shdr64*	sheader  = (void*) elf + elf->e_shoff;
-	shdr64* shstrtab = &sheader[elf->e_shstrndx];
+
+static shdr64* __k_elf_section(elf64* elf, size_t index) {
+	assert(index < elf->e_shnum);
+	return (void*) elf + elf->e_shoff + index * elf->e_shentsize;
+}
+
+#define __k_elf_shstrtab(elf) __k_elf_section(elf, elf->e_shstrndx)
+
+static void* __k_elf_section_data(elf64* file, shdr64* section, size_t offset) {
+	return (void*) file + section->sh_offset + offset;
+}
+
+static void* __k_elf_section_index(elf64* file, shdr64* section, size_t index) {
+	return __k_elf_section_data(file, section, index * section->sh_entsize);
+}
+
+static const char* __k_elf_section_name(elf64* file, shdr64* section) {
+	shdr64* shstrtab = __k_elf_shstrtab(file);
+	return __k_elf_section_data(file, shstrtab, section->sh_name);
+}
+
+static shdr64* __k_elf_find_section(elf64* elf, const char* target) {
 	for(size_t i = 0; i < elf->e_shnum; i++) {
-		if(!strcmp((void*) elf + shstrtab->sh_offset + sheader[i].sh_name, section)) {
-			return &sheader[i];
+		shdr64* section = __k_elf_section(elf, i);
+		if(!strcmp(__k_elf_section_name(elf, section), target)) {
+			return section;
 		}
 	}
 	return NULL;
 }
 
+static shdr64* __k_elf_find_section_by_type(elf64* elf, uint32_t type) {
+	for(size_t i = 0; i < elf->e_shnum; i++) {
+		shdr64* section = __k_elf_section(elf, i);
+		if(section->sh_type == type) {
+			return section;
+		}
+	}
+	return NULL;
+}
+
+#define __k_elf_symtab(elf) __k_elf_find_section_by_type(elf, SHT_SYMTAB)
+
+#define __k_elf_section_entries(sect) ((sect)->sh_size / (sect)->sh_entsize)
+
 static sym64* __k_elf_find_symbol(elf64* elf, const char* symbol) {
-	shdr64*	sheader = (void*) elf + elf->e_shoff;
-	shdr64* symtab  = __k_elf_find_section(elf, ".symtab");
-	for(size_t i = 0; i < symtab->sh_size / symtab->sh_entsize; i++) {
-		sym64* s    = (void*) elf + symtab->sh_offset + i * symtab->sh_entsize;
-		char*  name = (void*) elf + sheader[symtab->sh_link].sh_offset + s->st_name; 
+	shdr64* symtab  = __k_elf_symtab(elf);
+	shdr64* strtab  = __k_elf_section(elf, symtab->sh_link);
+	for(size_t i = 0; i < __k_elf_section_entries(symtab); i++) {
+		sym64* s    = __k_elf_section_index(elf, symtab, i);
+		const char* name = __k_elf_section_data(elf, strtab, s->st_name); 
 		if(!strcmp(name, symbol)) {
 			return s;
 		}
@@ -44,13 +78,12 @@ static sym64* __k_elf_find_symbol(elf64* elf, const char* symbol) {
 	return NULL;
 }
 
-static uintptr_t __k_elf_symval(elf64* file, uintptr_t table, uintptr_t index) {
-	shdr64* symtab = (void*) file + file->e_shoff + table * file->e_shentsize;
-	sym64*  sym = (void*) file + symtab->sh_offset + index * symtab->sh_entsize;
+static uintptr_t __k_elf_symval(elf64* file, uintptr_t table, size_t index) {
+	shdr64* symtab = __k_elf_section(file, table);
+	sym64*  sym    = __k_elf_section_index(file, symtab, index);
 	if(sym->st_shndx == SHN_UNDEF) {
-		shdr64* strtab = (void*) file + file->e_shoff + symtab->sh_link * file->e_shentsize;	
-		const char* name = (void*) file + strtab->sh_offset + sym->st_name;
-
+		shdr64* strtab  = __k_elf_section(file, symtab->sh_link);
+		const char* name = __k_elf_section_data(file, strtab, sym->st_name); 
 		symbol* kernel_symbol = k_lookup_symbol(name);
 		if(!kernel_symbol) {
 			if(ELF64_ST_BIND(sym->st_info) & STB_WEAK) {
@@ -65,15 +98,14 @@ static uintptr_t __k_elf_symval(elf64* file, uintptr_t table, uintptr_t index) {
 	} else if(sym->st_shndx == SHN_ABS) {
 		return sym->st_value;
 	} else {
-		shdr64* sect = (void*) file + file->e_shoff + sym->st_shndx * file->e_shentsize;
-		return (uintptr_t) file + sect->sh_offset + sym->st_value; 
+		shdr64* sect = __k_elf_section(file, sym->st_shndx);
+		return (uintptr_t) __k_elf_section_data(file, sect, sym->st_value); 
 	}
 }
 
-static uint8_t __k_elf_relocate(elf64* file, shdr64* sect, void* rel) {
-	shdr64*    target = (void*) file + file->e_shoff + file->e_shentsize * sect->sh_info;
-	rela64*    rela   = (rela64*) rel;
-	uintptr_t* addr   = (void*) file + target->sh_offset + rela->r_offset;
+static uint8_t __k_elf_relocate(elf64* file, shdr64* sect, rela64* rela) {
+	shdr64*    target = __k_elf_section(file, sect->sh_info);
+	uintptr_t* addr   = __k_elf_section_data(file, target, rela->r_offset);
 	uintptr_t  symval  = 0;
 	if(ELF64_R_SYM(rela->r_info) != SHN_UNDEF) {
 		symval = __k_elf_symval(file, sect->sh_link, ELF64_R_SYM(rela->r_info));
@@ -115,7 +147,7 @@ struct module_info* k_elf_load_module(void* elf) {
 	}
 
 	for(int i = 0; i < header->e_shnum; i++) {
-		shdr64* section = elf + header->e_shoff + i * header->e_shentsize;
+		shdr64* section = __k_elf_section(elf, i);
 		if(section->sh_type == SHT_NOBITS) {
 			if(!section->sh_size) {
 				continue;
@@ -123,19 +155,25 @@ struct module_info* k_elf_load_module(void* elf) {
 			if(section->sh_flags & SHF_ALLOC) {
 				void* mem = malloc(section->sh_size);
 				memset(mem, 0, section->sh_size);
-				section->sh_offset = mem - elf;
+				section->sh_offset = (uintptr_t) mem - (uintptr_t) elf;
 				k_debug("Allocated memory for section: %d", section->sh_size);
 			}
 		} else if (section->sh_type == SHT_REL || section->sh_type == SHT_RELA) {
-			k_debug("Started reloc.");
-			for(size_t j = 0; j < section->sh_size / section->sh_entsize; j++) {
-				rela64* rel = elf + section->sh_offset + j * section->sh_entsize;
-				if(!__k_elf_relocate(header, section, rel)) {
+			for(size_t j = 0; j < __k_elf_section_entries(section); j++) {
+				rela64 rel;
+				if(section->sh_type == SHT_RELA) {
+					rel = *(rela64*)(__k_elf_section_index(elf, section, j));
+				} else {
+					rel64* _rel = __k_elf_section_index(elf, section, j);
+					rel.r_offset = _rel->r_offset;
+					rel.r_info   = _rel->r_info;
+					rel.r_addend = 0;
+				}
+				if(!__k_elf_relocate(header, section, &rel)) {
 					k_error("Relocation failed.");
 					return NULL;
 				}
 			}
-			k_debug("Finished reloc.");
 		}
 	}
 
@@ -145,12 +183,17 @@ struct module_info* k_elf_load_module(void* elf) {
 	struct module_info* module = NULL;
 
 	if(modinfo) {
-		shdr64* shdr = elf + header->e_shoff + header->e_shentsize * modinfo->st_shndx;
-		module = elf + shdr->sh_offset + modinfo->st_value;
+		shdr64* shdr = __k_elf_section(elf, modinfo->st_shndx);
+		module = __k_elf_section_data(elf, shdr, modinfo->st_value);
 	}
 
 	return module;
 }
 
+void k_elf_exec(void* file) {
+	// TODO
+}
+
 EXPORT(k_elf_check)
 EXPORT(k_elf_load_module)
+EXPORT(k_elf_exec)

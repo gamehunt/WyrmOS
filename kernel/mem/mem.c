@@ -1,3 +1,4 @@
+#include "globals.h"
 #include <mem/mem.h>
 #include <mem/pmm.h>
 #include <mem/paging.h>
@@ -22,7 +23,22 @@ union descriptor {
 	uint64_t raw;
 };
 
-union  descriptor gdt[5];
+struct tss {
+	uint32_t reserved0;
+	uint64_t rsp[3];
+	uint64_t ist[7];
+	uint64_t reserved1;
+	uint16_t reserved2;
+	uint16_t iopb;
+} __attribute__((packed));
+
+struct extended_descriptor {
+	union descriptor common;
+	uint32_t         high;
+	uint32_t         reserved;
+};
+
+union  descriptor gdt[7];
 struct gdtptr     gdt_pointer;
 
 union descriptor __encode_descriptor(uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
@@ -35,6 +51,8 @@ union descriptor __encode_descriptor(uint32_t base, uint32_t limit, uint8_t acce
 	result.bits.flags       = flags & 0xf;
 	return result;
 }
+
+struct tss tss;
 
 #define ACC_RW        (1 << 1)
 #define ACC_DIRECTION (1 << 2)
@@ -80,8 +98,19 @@ static void __init_descriptors() {
 											 FL_LONG | 
 											 FL_GRAN); // User Data 0x20
 
+	struct extended_descriptor* ext = (void*) &gdt[5]; // TSS 0x28
+	ext->common = __encode_descriptor(((uintptr_t) &tss) & 0xFFFFFFFF, sizeof(tss), ACC_PRESENT | ACC_EXEC | 1, FL_SIZE);
+	ext->high   = ((uintptr_t) &tss) >> 32;
+	ext->reserved = 0;
+
+	k_mem_set_kernel_stack(__k_initial_stack);
+
 	load_descriptor_table(&gdt_pointer);
 	reload_segments();
+}
+
+void k_mem_set_kernel_stack(uintptr_t stack) {
+	tss.rsp[0] = stack;
 }
 
 int k_mem_init() {

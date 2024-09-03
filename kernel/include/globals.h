@@ -4,6 +4,7 @@
 #include <symbols.h>
 #include <stdint.h>
 
-extern INTERNAL uint8_t __k_early; 
+extern INTERNAL uint8_t    __k_early; 
+extern INTERNAL uintptr_t  __k_initial_stack;
 
 #endif

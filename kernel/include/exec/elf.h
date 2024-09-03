@@ -180,7 +180,7 @@ typedef struct {
 } shdr64;
 
 typedef struct {
-  	uint16_t    st_name;
+  	uint32_t    st_name;
   	uint8_t     st_info;	
   	uint8_t     st_other;	
   	uint16_t    st_shndx;	
@@ -251,5 +251,6 @@ typedef struct
 
 uint8_t             k_elf_check(void* elf);
 struct module_info* k_elf_load_module(void* elf);
+void                k_elf_exec(void* file);
 
 #endif

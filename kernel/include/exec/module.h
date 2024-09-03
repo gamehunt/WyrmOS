@@ -15,4 +15,8 @@ struct module_info {
 	int unload(void); \
 	struct module_info __module_info = {.name = modname, .load = load, .unload = unload};
 
+#include <symbols.h>
+
+INTERNAL int k_load_modules();
+
 #endif

@@ -49,13 +49,13 @@ static vfs_node* __alloc_vfs_node(const char* name) {
 
 static vfs_node* __get_mountpoint(path* p, path* left) {
 	tree* parent = __vfs_tree;
-	foreach(c, p) {
+	foreach(c, p->data) {
 		tree* next = tree_find_child_cmp(parent, c->value, __vfs_node_comparator);
 		if(next) {
 			parent = next;
 		} else {
 			while(c) {
-				list_push_back(left, strdup(c->value));
+				list_push_back(left->data, strdup(c->value));
 				c = c->next;
 			}
 			break;
@@ -107,7 +107,7 @@ static vfs_node* __k_fs_create_mapping(const char* _path) {
 	vfs_node* parent = __get_mountpoint(p, left);
 	tree* tree_parent = parent->owner;
 
-	foreach(c, left) {
+	foreach(c, left->data) {
 		vfs_node* child = __alloc_vfs_node(c->value);
 		tree_parent = tree_append(tree_parent, child);
 		child->owner = tree_parent;
@@ -134,7 +134,7 @@ void k_fs_mount_node(const char* path, fs_node* node) {
 }
 
 fs_node* k_fs_mount(const char* _path, const char* device, const char* type) {
-	fs_node* dev = k_fs_open(device);
+	fs_node* dev = k_fs_open(device, FS_O_RW);
 
 	if(!dev) {
 		k_error("%s: device not found", device);
@@ -158,20 +158,20 @@ fs_node* k_fs_mount(const char* _path, const char* device, const char* type) {
 	return node->root;
 }
 
-fs_node* k_fs_open(const char* _path) {
+fs_node* k_fs_open(const char* _path, uint16_t flags) {
 	path* p = path_parse(_path);
 	path* left = path_create();
 	vfs_node* mountpoint = __get_mountpoint(p, left);
 	fs_node*  result = NULL;
 	if(mountpoint) {
-		if(left->size == 0) {
+		if(left->data->size == 0) {
 			if(!mountpoint->root) {
 				result = __open_vfs(mountpoint);
 			} else {
 				result = mountpoint->root;
 			}
 		} else if(mountpoint->root && mountpoint->root->ops.open){
-			result = mountpoint->root->ops.open(mountpoint->root, left);
+			result = mountpoint->root->ops.open(mountpoint->root, left, flags);
 		}
 	}
 	path_free(left);
@@ -200,6 +200,13 @@ size_t k_fs_write(fs_node* node, size_t offset, size_t bytes, uint8_t* buffer) {
 	return 0;
 }
 
+int k_fs_readdir(fs_node* dir, dirent* dn, size_t index) {
+	if(dir->ops.readdir) {
+		return dir->ops.readdir(dir, dn, index);
+	}
+	return 0;
+}
+
 fs_node*  k_fs_alloc_fsnode(const char* name) {
 	fs_node* node = malloc(sizeof(fs_node));
 	memset(node, 0, sizeof(fs_node));
@@ -212,6 +219,7 @@ EXPORT(k_fs_create_mapping)
 EXPORT(k_fs_open)
 EXPORT(k_fs_close)
 EXPORT(k_fs_read)
+EXPORT(k_fs_readdir)
 EXPORT(k_fs_write)
 EXPORT(k_fs_register)
 EXPORT(k_fs_mount)

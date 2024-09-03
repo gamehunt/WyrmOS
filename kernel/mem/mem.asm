@@ -1,6 +1,8 @@
 global load_descriptor_table
 load_descriptor_table:
 	lgdt [rdi]
+	mov ax, 0x28 ; Load TSS
+	ltr ax
 	ret
 
 global reload_segments
@@ -17,4 +19,9 @@ reload_segments:
 	mov fs, ax
 	mov gs, ax
 	mov ss, ax
+	ret
+
+global get_rsp
+get_rsp:
+	mov rax, rsp
 	ret

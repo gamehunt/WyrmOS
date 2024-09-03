@@ -112,3 +112,21 @@ interrupt_stub:
 	add rsp, 16
 
 	iretq
+
+global ring3_jump
+ring3_jump:
+	mov ax, 0x23 ; User Data | 3
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+
+	mov rax, rsp
+	push 0x23 ; User Data | 3
+	push rax
+	pushf
+	push 0x1b ; User Code | 3
+
+	push rdi ; Entry
+
+	iretq

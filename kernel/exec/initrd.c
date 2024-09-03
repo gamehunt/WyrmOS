@@ -1,4 +1,6 @@
+#include "dev/log.h"
 #include "fs/fs.h"
+#include "fs/path.h"
 #include "symbols.h"
 #include "types/list.h"
 #include <exec/initrd.h>
@@ -80,7 +82,53 @@ static int8_t __filename_comparator(void* a, void* b) {
 	return strcmp(file->filename, name);
 }
 
-static fs_node* __initrd_open(fs_node* root, path* p) {
+static uint8_t __starts_with(const char* pre, const char* post) {
+	return strncmp(pre, post, strlen(pre)) == 0;
+}
+
+static int __initrd_readdir(fs_node* root, dirent* dir, size_t index) {
+	void* address = root->meta;
+	struct tar_header* root_header = address;
+	size_t c = 0;
+	while(1) {
+		struct tar_header* hdr = address;
+		if(hdr->filename[0] == '\0') {
+			break;
+		}
+
+		if(!__starts_with(root_header->filename, hdr->filename)) {
+			break;
+		}
+
+		if(hdr != root_header) {
+			if(c == index) {
+				path* p = path_parse(hdr->filename);
+				char* filename = path_filename(p);
+				strncpy(dir->name, filename, FS_DIRENT_NAME_LENGTH);
+				free(filename);
+				path_free(p);
+				return 1;
+			} else{
+				c++;
+			}
+		}
+
+		size_t size = __get_size(hdr->size);
+        address += ((size / 512) + 1) * 512;
+        if (size % 512)
+            address += 512;
+	}
+	dir->name[0] = '\0';
+	return 0;
+}
+
+static fs_node* __initrd_open(fs_node* root, path* p, uint16_t flags) {
+	if(flags & FS_O_DIR) {
+		p->flags |= P_DIR;
+	} else {
+		p->flags &= ~P_DIR;
+	}
+
 	fs_node* r = NULL;
 	char* path = path_build(p);
 
@@ -88,10 +136,16 @@ static fs_node* __initrd_open(fs_node* root, path* p) {
 
 	if(file) {
 		struct tar_header* header = file->value;
-		r       = k_fs_alloc_fsnode(p->tail->value);
-		r->meta = ((void*) header) + 512;
+		r       = k_fs_alloc_fsnode(p->data->tail->value);
 		r->size = __get_size(header->size);
-		r->ops.read = __ram_read;
+		if(p->flags & P_DIR) {
+			r->meta   = (void*) header;
+			r->flags |= FS_FL_DIR;
+			r->ops.readdir = __initrd_readdir;
+		} else {
+			r->meta = (void*) header + 512;
+			r->ops.read = __ram_read;
+		}
 	}
 
 	free(path);
