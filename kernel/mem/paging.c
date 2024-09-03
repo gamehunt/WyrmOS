@@ -1,4 +1,5 @@
 #include <mem/paging.h>
+#include "dev/log.h"
 #include "mem/alloc.h"
 #include "mem/pmm.h"
 #include "cpu/interrupt.h"
@@ -21,8 +22,8 @@ static volatile struct limine_hhdm_request hhdm_request = {
 
 addr __high_map_addr = 0;
 
-union page* __root_pml = NULL;
-union page* __pml      = NULL;
+static union page* __root_pml = NULL;
+static union page* __pml      = NULL;
 
 extern union page* __get_pml(uint64_t map);
 extern addr __get_pagefault_address();
@@ -119,6 +120,13 @@ void k_mem_paging_unmap(addr vaddr) {
 }
 
 uintptr_t k_mem_paging_get_physical(addr vaddr) {
+	uint32_t remainder = vaddr & (PAGE_SIZE - 1);
+	vaddr &= ~(PAGE_SIZE - 1);
+
+	if(vaddr & HIGH_MAP) {
+		return vaddr & ~(HIGH_MAP);
+	}
+
 	uint16_t pme = PME(vaddr);
 	uint16_t pdp = PDP(vaddr);
 	uint16_t pde = PDE(vaddr);
@@ -138,7 +146,7 @@ uintptr_t k_mem_paging_get_physical(addr vaddr) {
 		if(i < 3) {
 			pg = (union page*) TO_VIRTUAL(ADDR(pg[index].bits.page));
 		} else {
-			return ADDR(pg[index].bits.page);
+			return ADDR(pg[index].bits.page) + remainder;
 		}
 	}
 
@@ -157,8 +165,13 @@ union page* k_mem_paging_clone_pml(union page* pml) {
 extern void __set_pml(uintptr_t phys);
 
 void k_mem_paging_set_pml(union page* pml) {
+	if(!pml) {
+		pml = __root_pml;
+	}
 	__pml = pml;
-	__set_pml(k_mem_paging_get_physical((addr) pml));
+	uintptr_t phys = k_mem_paging_get_physical((addr) pml);
+	assert(phys != 0);
+	__set_pml(phys);
 }
 
 EXPORT(k_mem_paging_map)

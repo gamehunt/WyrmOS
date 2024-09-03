@@ -7,8 +7,11 @@ project(
 c_args_freestanding = [
     '-Wall',
     '-Wextra',
+    '-Wno-unused-function',
+    '-Wno-unused-parameter',
     '-std=gnu11', 
     '-ffreestanding',
+    '-O2',
     '-fno-stack-protector',
     '-fno-stack-check', 
     '-fno-lto',
@@ -21,8 +24,8 @@ c_args_freestanding = [
     '-mno-sse2', 
     '-mno-red-zone',
     '-g',
-    '-O2',
-    '-pipe'
+    '-pipe',
+    '-static'
 ]
 
 kernel_includes = include_directories('kernel/include')

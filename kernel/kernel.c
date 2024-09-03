@@ -76,10 +76,9 @@ void kernel_main(void) {
 	k_load_modules();
 	k_process_init();
 
-	k_debug("Here");
+	k_debug("here");
 
-	while(1);
-
+#if 0
 	int r = k_exec("/bin/init", 0, NULL, NULL);
 
 	if(r != 0) {
@@ -87,6 +86,7 @@ void kernel_main(void) {
 	}
 
 	panic(NULL, "Init process died.");
+#endif
 
 end:
     hcf();

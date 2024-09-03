@@ -1,15 +1,14 @@
 #include "mem/mem.h"
-#include "string.h"
 #include <panic.h>
 #include <asm.h>
 #include <dev/log.h>
-#include <stdlib.h>
 #include <symbols.h>
 
 #include <stdarg.h>
 #include <stdio.h>
 
 #define PANIC_WIDTH 20
+#define MAX_STACKTRACE_DEPTH 16
 
 extern const char* __log_prefixes[];
 
@@ -19,30 +18,46 @@ struct stackframe {
   uintptr_t rip;
 };
 
+const char* __get_location_str(uintptr_t address, uintptr_t* offset) {
+	symbol* nearest = k_find_nearest_symbol(address);
+	const char* src = "unknown";
+	*offset = 0;
+	if(nearest) {
+		src = nearest->name;
+		*offset = address - nearest->address;
+	} else if (address >= HEAP_START && address < HEAP_END){
+		src = "heap";	
+		*offset = address - HEAP_START;
+	} else if (address >= VIRTUAL_BASE) {
+		src = "@internal";
+	}
+	return src;	
+}
 
-static void __stacktrace(uintptr_t stack) {
+static void __stacktrace(regs* r) {
+	uintptr_t offset;
+	uintptr_t address = r ? r->rip : (uintptr_t) __builtin_return_address(0);
+	const char* src = __get_location_str(address, &offset);
+	k_crit("%#.16lx: <%s + %#x>", address, src, offset);
+	register uintptr_t bp asm ("bp");
+	uintptr_t stack = r ? r->rbp : bp;
 	struct stackframe* frame = (struct stackframe*) stack;
-	while(frame && frame->rip) {
-		symbol* nearest = k_find_nearest_symbol(frame->rip);
-		const char* src = "unknown";
-		uintptr_t offset = 0;
-		if(nearest) {
-			src = nearest->name;
-			offset = frame->rip - nearest->address;
-		} else if (frame->rip >= HEAP_START && frame->rip < HEAP_END){
-			src = "heap";	
-			offset = frame->rip - HEAP_START;
-		} else if (frame->rip >= VIRTUAL_BASE) {
-			src = "@internal";
-		}
+	int depth = 0;
+	while((uintptr_t) frame > KERNEL_LOWEST_ADDRESS && frame->rip) {
+		uintptr_t offset;
+		const char* src = __get_location_str(frame->rip,  &offset);
 		k_crit("%#.16lx: <%s + %#lx>", frame->rip, src, offset);
 		frame = frame->rbp;
+		depth++;
+		if(depth > MAX_STACKTRACE_DEPTH) {
+			k_crit("Stacktrace depth reached, further entries omitted.");
+			break;
+		}
 	}
 }
 
 __attribute__((noreturn)) void panic(regs* r, const char* message, ...){
 	cli();
-
 	k_crit("Kernel panic!");
 	k_print("%s", __log_prefixes[CRITICAL]);
 	va_list ap;
@@ -50,7 +65,6 @@ __attribute__((noreturn)) void panic(regs* r, const char* message, ...){
 	vprintf(message, ap);
 	k_print("\r\n");
 	k_crit("Dump:");
-
 	if(r) {
 		k_crit("int_no = %ld\terr_code = %#lx", r->int_no, r->err_code);
 		k_crit("rip = %#.16lx\trsp = %#.16lx\trbp = %#.16lx", r->rip, r->rsp, r->rbp);
@@ -62,12 +76,8 @@ __attribute__((noreturn)) void panic(regs* r, const char* message, ...){
 	} else {
 		k_crit("Not available.");
 	}
-
 	k_crit("Stacktrace:");
-
-	register uintptr_t bp asm ("bp");
-	__stacktrace(r ? r->rbp : bp);
-
+	__stacktrace(r);
 	hcf();
 }
 

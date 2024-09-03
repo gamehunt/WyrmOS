@@ -4,8 +4,8 @@
 #ifdef NDEBUG
 #define assert(expression) ((void)0)
 #else
-#define assert(expression) ((expression) ? (void)0 : __assert_fail(__FILE__, __LINE__, #expression))
-extern void __assert_fail(const char*, int, const char*) __attribute__((noreturn));
+#define assert(expression) ((expression) ? (void)0 : __assert_fail(__FILE__, __FUNCTION__, __LINE__, #expression))
+extern void __assert_fail(const char*, const char*, int, const char*) __attribute__((noreturn));
 #endif
 
 #endif

@@ -11,6 +11,7 @@ typedef struct {
 	uint64_t    rsp;
 	uint64_t    rbp;
 	uint64_t    rip;
+
 	union page* pml;
 	void*       kernel_stack;
 } context;
@@ -21,6 +22,7 @@ typedef struct {
 	context ctx;
 	tree*      tree_node;
 	list_node* list_node;
+	list_node* ready_node;
 } process;
 
 typedef int(*tasklet)(void);

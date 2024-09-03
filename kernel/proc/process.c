@@ -16,22 +16,26 @@
 static tree* __process_tree;
 static list* __process_list;
 
-static process* __current_process;
+static volatile process* __current_process;
 static process* __idle_process;
 
 static list* __ready_queue;
 
-extern __attribute__((noreturn))      void __load_ctx(context* ctx);
-extern __attribute__((returns_twice)) int  __save_ctx(context* ctx);
+extern __attribute__((noreturn))      void __load_ctx(volatile context* ctx);
+extern __attribute__((returns_twice)) int  __save_ctx(volatile context* ctx);
 
-static void __k_proc_load_context(context* ctx) {
+static void __k_proc_load_context(volatile context* ctx) {
 	k_mem_paging_set_pml(ctx->pml);
 	k_mem_set_kernel_stack((uintptr_t) ctx->kernel_stack);
+
+	asm volatile ("" ::: "memory");
+
 	__load_ctx(ctx);
+	__builtin_unreachable();
 }
 
 void k_process_yield() {
-	process* old = __current_process;
+	volatile process* old = __current_process;
 	list_node* new = list_pop_back(__ready_queue);
 	if(new) {
 		__current_process = new->value;	
@@ -39,7 +43,7 @@ void k_process_yield() {
 		__current_process = __idle_process;
 	}
 	if(old != __idle_process) {
-		list_push_front(__ready_queue, old);
+		list_prepend(__ready_queue, old->ready_node);
 		if(__save_ctx(&old->ctx)) {
 			return; // Return from switch
 		}
@@ -52,7 +56,9 @@ int k_process_spawn_tasklet(const char* name, tasklet t) {
 }
 
 static void* __k_process_alloc_kernel_stack() {
-	return (kmalloc_aligned(KERNEL_STACK_SIZE, 16));
+	void* mem = (kmalloc_aligned(KERNEL_STACK_SIZE, 16));
+	memset(mem, 0, KERNEL_STACK_SIZE);
+	return mem + KERNEL_STACK_SIZE;
 }
 
 static process* __k_process_create_init() {
@@ -63,7 +69,9 @@ static process* __k_process_create_init() {
 
 static void __k_process_idle_routine(void) {
 	while(1) {
-		asm("hlt");
+		asm volatile ("sti");
+		asm volatile ("hlt");
+		asm volatile ("cli");
 	}
 }
 
@@ -97,7 +105,7 @@ void k_process_spawn(process* p, process* parent) {
 	p->list_node = list_push_back(__process_list, p);
 	p->pid       = __process_list->size;
 
-	list_push_back(__ready_queue, p);
+	p->ready_node = list_push_back(__ready_queue, p);
 }
 
 void k_process_init() {

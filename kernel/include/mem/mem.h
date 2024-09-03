@@ -10,6 +10,7 @@
 #define HEAP_END      (0xffffff0000000000UL - 0x1000)
 #define SYMTABLE      (HEAP_END + 0x1000)
 #define VIRTUAL_BASE  0xffffffff80000000UL
+#define KERNEL_LOWEST_ADDRESS HEAP_START
 
 typedef uint64_t addr;
 

@@ -1,7 +1,7 @@
 global __save_ctx
 __save_ctx:
-    mov [rdi + 0], esp ; Save ESP
-    mov [rdi + 8], ebp ; Save EBP
+    mov [rdi + 0], rsp ; Save ESP
+    mov [rdi + 8], rbp ; Save EBP
 
     mov rax, [rsp]      ; Get EIP
     mov [rdi + 16], rax ; Save EIP

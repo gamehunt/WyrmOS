@@ -11,7 +11,7 @@
 
 #define HIGH_MAP __high_map_addr
 #define TO_VIRTUAL(phys)  (phys | HIGH_MAP)
-#define TO_PHYSICAL(virt) (virt & ~(HIGH_MAP)) // Works only for addresses, obtained with TO_VIRTUAL
+#define TO_PHYSICAL(virt) (k_mem_paging_get_physical(virt))
 
 union page {
     struct {

@@ -1,3 +1,4 @@
+#include "dev/log.h"
 #include "proc/process.h"
 #include <dev/timer.h>
 #include <dev/pit.h>
@@ -13,8 +14,12 @@ static void __tick(regs* r) {
 	foreach(cb, __timer_callbacks) {
 		((timer_callback) cb->value)(r);
 	}
+
 	IRQ_ACK(0);
-	k_process_yield();
+
+	if(r->cs != 0x08) {
+		k_process_yield();
+	}
 }
 
 void k_dev_timer_init() {

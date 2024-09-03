@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include <types/list.h>
+#include <assert.h>
 #include <stdlib.h>
 
 list* list_create() {
@@ -11,6 +11,7 @@ list* list_create() {
 }
 
 void list_clear(list* list) {
+	assert(list != NULL);
 	while(list->head) {
 		list_node* next = list->head->next;
 		free(list->head);
@@ -35,6 +36,7 @@ static list_node* __list_create_node(void* v) {
 }
 
 void list_append(list* l, list_node* n) {
+	assert(l != NULL);
 	n->owner = l;
 	if(!l->tail) {
 		l->head = n;
@@ -48,6 +50,7 @@ void list_append(list* l, list_node* n) {
 }
 
 void list_prepend(list* l, list_node* n) {
+	assert(l != NULL);
 	if(!l->head) {
 		return list_append(l, n);
 	} else {
@@ -60,30 +63,39 @@ void list_prepend(list* l, list_node* n) {
 }
 
 list_node* list_push_back(list* l, void* v) {
+	assert(l != NULL);
 	list_node* n = __list_create_node(v);
 	list_append(l, n);
 	return n;
 }
 
 list_node* list_push_front(list* l, void* v) {
+	assert(l != NULL);
 	list_node* n = __list_create_node(v);
 	list_prepend(l, n);
 	return n;
 }
 list_node* list_pop_back(list* l) {
+	assert(l != NULL);
 	if(!l->tail) {
 		return NULL;
 	}
 	list_node* n = l->tail;
-	l->tail = l->tail->prev;
-	l->tail->next = NULL;
-	n->next  = NULL;
-	n->prev  = NULL;
-	n->owner = NULL;
+	l->tail = n->prev;
+	if(n == l->head) {
+		l->head = l->tail;
+	}
+	if(l->tail) {
+		l->tail->next = NULL;
+	}
+	n->next  	  = NULL;
+	n->prev  	  = NULL;
+	n->owner 	  = NULL;
 	return n;
 }
 
 list_node* list_pop_front(list* l) {
+	assert(l != NULL);
 	if(!l->head) {
 		return NULL;
 	}
@@ -97,6 +109,7 @@ list_node* list_pop_front(list* l) {
 }
 
 list_node* list_get(list* l, size_t i) {
+	assert(l != NULL);
 	if(i >= l->size) {
 		return NULL;
 	}
@@ -109,6 +122,7 @@ list_node* list_get(list* l, size_t i) {
 }
 
 void* list_get_raw(list* l, size_t i) {
+	assert(l != NULL);
 	list_node* n = list_get(l, i);
 	if(!n) {
 		return NULL;
@@ -118,6 +132,7 @@ void* list_get_raw(list* l, size_t i) {
 }
 
 void list_remove(list* l, size_t i) {
+	assert(l != NULL);
 	list_node* n = list_get(l, i);
 	if(n) {
 		list_delete(l, n);
@@ -125,6 +140,7 @@ void list_remove(list* l, size_t i) {
 }
 
 void list_delete(list* l, list_node* n) {
+	assert(l != NULL);
 	if(n->prev) {
 		n->prev->next = n->next;
 	}
@@ -136,6 +152,7 @@ void list_delete(list* l, list_node* n) {
 }
 
 list_node* list_find_cmp(list* l, void* v, comparator cmp) {
+	assert(l != NULL);
 	foreach(e, l) {
 		if(cmp(e->value, v) == 0) {
 			return e;
