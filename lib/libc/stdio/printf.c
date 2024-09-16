@@ -236,7 +236,7 @@ int __put_number(va_list args, unsigned int base, uint8_t uppercase, __printf_pa
 }
 	
 
-#ifndef __LIBK
+#if 0
 #define __PRINTF_DBL_UPPERCASE  (1 << 0)
 #define __PRINTF_DBL_SCIENTIFIC (2 << 0)
 static int __put_number_float(double number, unsigned int base, uint8_t flags, __char_emitter emitter, void* data) {
@@ -389,7 +389,7 @@ static int __vprintf_generic(const char* format, va_list arg_ptr, __char_emitter
 					params.length = PAR_LEN_L;
 					written += __put_number(arg_ptr, 16, 0, &params, emitter, data);
 					break;
-#ifndef __LIBK
+#if 0
 				case 'f':
 					written += __put_number_float(va_arg(arg_ptr, double), 10, 0, emitter, data);
 					break;

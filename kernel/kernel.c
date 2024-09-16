@@ -1,8 +1,10 @@
 #include "exec/exec.h"
 #include "exec/initrd.h"
 #include "exec/module.h"
+#include "mem/paging.h"
 #include "panic.h"
 #include "proc/process.h"
+#include <string.h>
 #include <symbols.h>
 #include <asm.h>
 #include <globals.h>

@@ -30,7 +30,7 @@ extern void load_interrupt_table(struct idtptr* ptr);
 // 64-bit Trap Gate      - Kernel = 0x8F
 // 64-bit Interrupt Gate - User   = 0xEE
 // 64-bit Trap Gate      - User   = 0xEF
-void __setup_idt_entry(uint8_t num, uint64_t entry, uint16_t code, uint8_t attrib) {
+void k_cpu_int_setup_idt_entry(uint8_t num, uint64_t entry, uint16_t code, uint8_t attrib) {
 	idt[num].selector = code;
 	idt[num].type_attributes = attrib;
 	idt[num].offset_low = entry & 0xFFFF;
@@ -41,7 +41,7 @@ void __setup_idt_entry(uint8_t num, uint64_t entry, uint16_t code, uint8_t attri
 }
 
 #define define_isr(num) extern void isr##num(regs*); 
-#define setup_isr(num, desc) __setup_idt_entry(num, (uint64_t) isr##num, 0x08, 0x8E); __isr_descs[num] = desc;
+#define setup_isr(num, desc) k_cpu_int_setup_idt_entry(num, (uint64_t) isr##num, 0x08, 0x8E); __isr_descs[num] = desc;
 #define isr_desc(num) __isr_descs[(num)]
 
 define_isr(0);
@@ -167,11 +167,9 @@ void k_cpu_int_init() {
 	setup_isr(46, "IRQ15");
 	setup_isr(47, "IRQ16");
 
-	load_interrupt_table(&idt_pointer);
-
-	k_cpu_pic_init();
-
 	k_cpu_setup_syscalls();
+	load_interrupt_table(&idt_pointer);
+	k_cpu_pic_init();
 }
 
 void k_cpu_int_setup_handler(uint8_t interrupt, interrupt_handler handler) {

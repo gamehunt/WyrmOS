@@ -1,0 +1,15 @@
+[binaries]
+c = 'x86_64-wyrm-gcc'
+cpp = 'x86_64-wyrm-g++'
+ar = 'x86_64-wyrm-ar'
+strip = 'x86_64-wyrm-strip'
+nasm = 'nasm'
+
+[host_machine]
+system = 'linux'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+
+[properties]
+skip_sanity_check = true

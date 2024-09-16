@@ -1,0 +1,126 @@
+diff --git a/bfd/config.bfd b/bfd/config.bfd
+index a4c6c8e8854..53efe0d80c3 100644
+--- a/bfd/config.bfd
++++ b/bfd/config.bfd
+@@ -338,7 +338,18 @@ case "${targ}" in
+     want64=true
+     ;;
+ #endif /* BFD64 */
+-
++  i[3-7]86-*-wyrm*)
++    targ_defvec=i386_elf32_vec
++    targ_selvecs=
++    targ64_selvecs=x86_64_elf64_vec
++    ;;
++#ifdef BFD64
++  x86_64-*-wyrm*)
++    targ_defvec=x86_64_elf64_vec
++    targ_selvecs=i386_elf32_vec
++    want64=true
++    ;;
++#endif
+   am33_2.0-*-linux*)
+     targ_defvec=am33_elf32_linux_vec
+     ;;
+diff --git a/config.sub b/config.sub
+index dba16e84c77..93612e38f37 100755
+--- a/config.sub
++++ b/config.sub
+@@ -1754,7 +1754,7 @@ case $os in
+ 	     | onefs* | tirtos* | phoenix* | fuchsia* | redox* | bme* \
+ 	     | midnightbsd* | amdhsa* | unleashed* | emscripten* | wasi* \
+ 	     | nsk* | powerunix* | genode* | zvmoe* | qnx* | emx* | zephyr* \
+-	     | fiwix* )
++	     | fiwix* | wyrm* )
+ 		;;
+ 	# This one is extra strict with allowed versions
+ 	sco3.2v2 | sco3.2v[4-9]* | sco5v6*)
+diff --git a/gas/configure.tgt b/gas/configure.tgt
+index 62f806bdfe8..7e7b245936e 100644
+--- a/gas/configure.tgt
++++ b/gas/configure.tgt
+@@ -263,7 +263,7 @@ case ${generic_target} in
+   i386-*-*nt*)				fmt=coff em=pe ;;
+   i386-*-rdos*)				fmt=elf ;;
+   i386-*-darwin*)			fmt=macho ;;
+-
++  i386-*-wyrm*)                         fmt=elf ;;
+   ia16-*-elf*)				fmt=elf ;;
+ 
+   ia64-*-elf*)				fmt=elf ;;
+diff --git a/ld/Makefile.am b/ld/Makefile.am
+index d31021c13e2..cc01494aa81 100644
+--- a/ld/Makefile.am
++++ b/ld/Makefile.am
+@@ -281,6 +281,7 @@ ALL_EMULATION_SOURCES = \
+ 	eelf_i386_ldso.c \
+ 	eelf_i386_sol2.c \
+ 	eelf_i386_vxworks.c \
++	eelf_i386_wyrm.c \
+ 	eelf_iamcu.c \
+ 	eelf_s390.c \
+ 	eh8300elf.c \
+@@ -457,6 +458,7 @@ ALL_64_EMULATION_SOURCES = \
+ 	eelf_x86_64_fbsd.c \
+ 	eelf_x86_64_haiku.c \
+ 	eelf_x86_64_sol2.c \
++	eelf_x86_64_wyrm.c \
+ 	ehppa64linux.c \
+ 	ei386pep.c \
+ 	emmo.c
+diff --git a/ld/Makefile.in b/ld/Makefile.in
+index ee0c98f65b0..8a33553fa67 100644
+--- a/ld/Makefile.in
++++ b/ld/Makefile.in
+@@ -778,6 +778,7 @@ ALL_EMULATION_SOURCES = \
+ 	eelf_i386_ldso.c \
+ 	eelf_i386_sol2.c \
+ 	eelf_i386_vxworks.c \
++	eelf_i386_wyrm.c \
+ 	eelf_iamcu.c \
+ 	eelf_s390.c \
+ 	eh8300elf.c \
+@@ -953,6 +954,7 @@ ALL_64_EMULATION_SOURCES = \
+ 	eelf_x86_64_fbsd.c \
+ 	eelf_x86_64_haiku.c \
+ 	eelf_x86_64_sol2.c \
++	eelf_x86_64_wyrm.c \
+ 	ehppa64linux.c \
+ 	ei386pep.c \
+ 	emmo.c
+@@ -1447,6 +1449,7 @@ distclean-compile:
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_ldso.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_sol2.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_vxworks.Po@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_i386_wyrm.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_iamcu.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_mipsel_haiku.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_s390.Po@am__quote@
+@@ -1455,6 +1458,7 @@ distclean-compile:
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_x86_64_fbsd.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_x86_64_haiku.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_x86_64_sol2.Po@am__quote@
++@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eelf_x86_64_wyrm.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eh8300elf.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eh8300elf_linux.Po@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eh8300helf.Po@am__quote@
+diff --git a/ld/configure.tgt b/ld/configure.tgt
+index 2bae9099b6a..ac5e1f3156f 100644
+--- a/ld/configure.tgt
++++ b/ld/configure.tgt
+@@ -420,6 +420,15 @@ i[3-7]86-*-moss*)	targ_emul=i386moss
+ i[3-7]86-*-winnt*)	targ_emul=i386pe ;
+ 			targ_extra_ofiles="deffilep.o pe-dll.o"
+ 			;;
++i[3-7]86-*-wyrm*)
++			targ_emul=elf_i386_wyrm
++			targ_extra_emuls=elf_i386
++			targ64_extra_emuls="elf_x86_64_wyrm elf_x86_64"
++			;;
++x86_64-*-wyrm*)
++			targ_emul=elf_x86_64_wyrm
++			targ_extra_emuls="elf_i386_wyrm elf_x86_64 elf_i386"
++			;;                       
+ i[3-7]86-*-pe)		targ_emul=i386pe ;
+ 			targ_extra_ofiles="deffilep.o pe-dll.o"
+ 			;;

@@ -20,6 +20,11 @@ void* __attribute__ ((malloc)) realloc(void* old, size_t new) {
 	return r;
 }
 
+void* __attribute__ ((malloc)) calloc(size_t num, size_t size) {
+	void* m = malloc(num * size);
+    memset(m, 0, num * size);
+    return m;
+}
 
 void free(void* ptr) {
 #ifdef __LIBK

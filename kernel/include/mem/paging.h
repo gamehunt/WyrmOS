@@ -13,6 +13,8 @@
 #define TO_VIRTUAL(phys)  (phys | HIGH_MAP)
 #define TO_PHYSICAL(virt) (k_mem_paging_get_physical(virt))
 
+#define PM_FL_USER (1 << 0)
+
 union page {
     struct {
         uint64_t present:1;
@@ -43,9 +45,12 @@ union page* k_mem_paging_clone_pml(union page* pml);
 void        k_mem_paging_set_pml(union page* pml);
 
 uintptr_t k_mem_paging_get_physical(addr vaddr);
-void k_mem_paging_map(addr vaddr, addr paddr);
-void k_mem_paging_map_pages(addr vaddr, size_t pages, addr paddr);
-void k_mem_paging_map_region(addr vaddr_start, addr vaddr_end, addr paddr);
+void k_mem_paging_map_ex(addr vaddr, addr paddr, uint8_t flags);
+void k_mem_paging_map_pages_ex(addr vaddr, size_t pages, addr paddr, uint8_t flags);
+void k_mem_paging_map_region_ex(addr vaddr_start, addr vaddr_end, addr paddr, uint8_t flags);
+#define k_mem_paging_map(vaddr, paddr) k_mem_paging_map_ex((vaddr), (paddr), 0);
+#define k_mem_paging_map_pages(vaddr, pages, paddr) k_mem_paging_map_pages_ex((vaddr), (pages), (paddr), 0)
+#define k_mem_paging_map_region(vaddr_start, vaddr_end, paddr) k_mem_paging_map_region_ex((vaddr_start), (vaddr_end), (paddr), 0)
 void k_mem_paging_unmap(addr vaddr);
 
 #endif

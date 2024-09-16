@@ -48,7 +48,7 @@ union page* k_mem_paging_get_root_pml() {
 	return __root_pml;
 }
 
-void k_mem_paging_map(addr vaddr, addr paddr) {
+void k_mem_paging_map_ex(addr vaddr, addr paddr, uint8_t flags) {
 	uint16_t pme = PME(vaddr);
 	uint16_t pdp = PDP(vaddr);
 	uint16_t pde = PDE(vaddr);
@@ -67,7 +67,7 @@ void k_mem_paging_map(addr vaddr, addr paddr) {
 			p.raw = 0;
 			p.bits.present  = 1;
 			p.bits.writable = 1;
-			p.bits.user     = 0;
+			p.bits.user     = flags & PM_FL_USER;
 			if(i < 3 || paddr == 0) {
 				p.bits.page = FRAME(k_mem_pmm_alloc(1));
 			} else {
@@ -81,19 +81,19 @@ void k_mem_paging_map(addr vaddr, addr paddr) {
 	}
 }
 
-void k_mem_paging_map_pages(addr vaddr, size_t pages, addr paddr) {
+void k_mem_paging_map_pages_ex(addr vaddr, size_t pages, addr paddr, uint8_t flags) {
 	assert(vaddr % PAGE_SIZE == 0);
 	assert(paddr % PAGE_SIZE == 0);
 	for(size_t page = 0; page < pages; page++) {
-		k_mem_paging_map(vaddr + page * PAGE_SIZE, (paddr == 0 ? paddr : paddr + page * PAGE_SIZE));
+		k_mem_paging_map_ex(vaddr + page * PAGE_SIZE, (paddr == 0 ? paddr : paddr + page * PAGE_SIZE), flags);
 	}
 }
 
-void k_mem_paging_map_region(addr vaddr_start, addr vaddr_end, addr paddr) {
+void k_mem_paging_map_region_ex(addr vaddr_start, addr vaddr_end, addr paddr, uint8_t flags) {
 	assert(vaddr_start % PAGE_SIZE == 0);
 	assert(vaddr_end % PAGE_SIZE == 0);
 	assert(paddr % PAGE_SIZE == 0);
-	k_mem_paging_map_pages(vaddr_start, (vaddr_start - vaddr_end) / PAGE_SIZE, paddr);
+	k_mem_paging_map_pages_ex(vaddr_start, (vaddr_start - vaddr_end) / PAGE_SIZE, paddr, flags);
 }
 
 void k_mem_paging_unmap(addr vaddr) {
@@ -174,10 +174,10 @@ void k_mem_paging_set_pml(union page* pml) {
 	__set_pml(phys);
 }
 
-EXPORT(k_mem_paging_map)
+EXPORT(k_mem_paging_map_ex)
 EXPORT(k_mem_paging_unmap)
-EXPORT(k_mem_paging_map_pages)
-EXPORT(k_mem_paging_map_region)
+EXPORT(k_mem_paging_map_pages_ex)
+EXPORT(k_mem_paging_map_region_ex)
 EXPORT(k_mem_paging_get_current_pml)
 EXPORT(k_mem_paging_clone_pml)
 EXPORT(k_mem_paging_set_pml)

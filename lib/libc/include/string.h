@@ -2,6 +2,9 @@
 #define __LIBC_STRING_H 1
 
 #include <stddef.h>
+#include <sys/wyrm.h>
+
+CHEADER_START
 
 void* memcpy(void *dest, const void *src, size_t n);
 void* memset(void *s, int c, size_t n);
@@ -23,4 +26,7 @@ int    strncmp(const char * string1, const char * string2, size_t num);
 long   strtol(const char *start, char **end, int radix);
 char*  strstr(const char *strB, const char *strA);
 char*  strnstr(const char* big, const char* little, size_t len);
+
+CHEADER_END
+
 #endif

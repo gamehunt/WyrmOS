@@ -20,6 +20,13 @@ align 4
 		jmp interrupt_stub
 %endmacro
 
+global __syscall_stub
+__syscall_stub:
+    push 0x0
+    push 0x80
+    jmp  interrupt_stub
+
+
 ISR 	0
 ISR 	1
 ISR     2
@@ -110,23 +117,5 @@ interrupt_stub:
 	pop rax
 
 	add rsp, 16
-
-	iretq
-
-global ring3_jump
-ring3_jump:
-	mov ax, 0x23 ; User Data | 3
-	mov ds, ax
-	mov es, ax
-	mov fs, ax
-	mov gs, ax
-
-	mov rax, rsp
-	push 0x23 ; User Data | 3
-	push rax
-	pushf
-	push 0x1b ; User Code | 3
-
-	push rdi ; Entry
 
 	iretq

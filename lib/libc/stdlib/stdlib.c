@@ -3,6 +3,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+int abs(int n) {
+    return n >= 0 ? n : -n;
+}
+
 int atoi(const char* str) {
 	const char* end = str;	
 
@@ -40,3 +44,17 @@ void abort(void) {
 	panic(NULL, "abort() called.");
 #endif
 }
+
+#ifndef __LIBK
+int atexit(void (*c)(void)) {
+    return 0;
+}
+
+char* getenv(const char* env) {
+    return "";
+}
+
+void __attribute__((noreturn)) exit(int exit_code) {
+    while(1);
+}
+#endif

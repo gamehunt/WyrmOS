@@ -1,6 +1,10 @@
 #ifndef __LIBC_CTYPE_H
 #define __LIBC_CTYPE_H 1
 
+#include <sys/wyrm.h>
+
+CHEADER_START
+
 int isalnum(int c); 
 int isalpha(int c);
 int isblank(int c); 
@@ -16,5 +20,7 @@ int isxdigit(int c);
 
 int toupper(int c);   
 int tolower(int c);   
+
+CHEADER_END
 
 #endif
