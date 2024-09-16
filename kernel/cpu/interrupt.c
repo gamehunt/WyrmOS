@@ -1,5 +1,6 @@
 #include <cpu/interrupt.h>
 #include "cpu/pic.h"
+#include "cpu/syscall.h"
 #include "panic.h"
 
 #define MAX_INTERRUPT 256
@@ -169,6 +170,8 @@ void k_cpu_int_init() {
 	load_interrupt_table(&idt_pointer);
 
 	k_cpu_pic_init();
+
+	k_cpu_setup_syscalls();
 }
 
 void k_cpu_int_setup_handler(uint8_t interrupt, interrupt_handler handler) {

@@ -1,4 +1,4 @@
-global __save_ctx
+global __save_ctx ; context* ctx
 __save_ctx:
     mov [rdi + 0], rsp ; Save ESP
     mov [rdi + 8], rbp ; Save EBP
@@ -9,10 +9,20 @@ __save_ctx:
     xor rax, rax       ; return 0
 	ret
 
-global __load_ctx
+global __load_ctx ; context* ctx
 __load_ctx:
     mov rsp, [rdi + 0] ; Restore ESP
     mov rbp, [rdi + 8] ; Restore EBP
 
     mov  rax, 1     ; Make save function return 1
     jmp [rdi + 16]  ; Jump
+
+global __usr_jmp ; uintptr_t entrypoint, uintptr_t stack
+__usr_jmp:
+	push   0x23 ; ss
+	push   rsi  ; rsp
+	push   0x200200  ; rflags (INT | CPUID)
+	push   0x1b ; cs
+	push   rdi  ; rip
+	iretq
+

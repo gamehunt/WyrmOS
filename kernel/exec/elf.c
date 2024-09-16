@@ -190,9 +190,27 @@ struct module_info* k_elf_load_module(void* elf) {
 	return module;
 }
 
-int k_elf_exec(void* file, int argc, const char** argv, const char** envp) {
-	// TODO
-	return -1;
+extern void __attribute__((noreturn)) __usr_jmp(uintptr_t entry, uintptr_t stack);
+int k_elf_exec(void* elf, int argc, const char** argv, const char** envp) {
+	uint8_t version = k_elf_check(elf);
+	if(version != ELF_CLASS64) {
+		k_error("Invalid e_ident.");
+		return -1;
+	}
+
+	elf64* header = elf;
+	if(header->e_type != ET_EXEC) {
+		k_error("Not executable.");
+		return -1;
+	}
+
+	phdr64* phdr = elf + header->e_phoff;
+	for(size_t i = 0; i < header->e_phnum; i++) {
+		k_debug("%d", phdr->p_type);
+		phdr = ((void*) phdr) + header->e_phentsize;
+	}
+
+	__usr_jmp(0x0, 0x0);
 }
 
 EXPORT(k_elf_check)

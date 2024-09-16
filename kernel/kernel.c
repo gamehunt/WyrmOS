@@ -43,6 +43,7 @@ static volatile LIMINE_REQUESTS_END_MARKER;
 
 extern uintptr_t get_rsp(void);
 
+extern void __attribute__((noreturn)) __usr_jmp(uintptr_t entry, uintptr_t stack);
 void kernel_main(void) {
 	DEBUG_INIT();
 
@@ -76,17 +77,12 @@ void kernel_main(void) {
 	k_load_modules();
 	k_process_init();
 
-	k_debug("here");
-
-#if 0
 	int r = k_exec("/bin/init", 0, NULL, NULL);
-
 	if(r != 0) {
 		panic(NULL, "Failed to execute init process");
 	}
 
 	panic(NULL, "Init process died.");
-#endif
 
 end:
     hcf();
