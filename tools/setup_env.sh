@@ -25,6 +25,7 @@ function setup_binutils {
 	../binutils-${BINUTILS}/configure --target=$TARGET --prefix=${PREFIX} --with-sysroot --disable-nls --disable-werror
 	make
 	make install
+	cd ../..
 }
 
 function setup_gcc {
@@ -45,7 +46,7 @@ function setup_gcc {
 	#compile libgcc without red zone
 	if [ ! -f gcc-${GCC}/gcc/config/i386/t-x86_64-elf ]; then
 		cp ../../t-x86_64-elf gcc-${GCC}/gcc/config/i386/
-		sed -i '/x86_64-\*-elf\*)/a\'$'\n\t''tmake_file="${tmake_file} i386/t-x86_64-elf"' gcc-${gcc}/gcc/config.gcc
+		sed -i '/x86_64-\*-elf\*)/a\'$'\n\t''tmake_file="${tmake_file} i386/t-x86_64-elf"' gcc-${GCC}/gcc/config.gcc
 	fi
 
 	cd build
@@ -54,6 +55,7 @@ function setup_gcc {
 	make all-target-libgcc
 	make install-gcc
 	make install-target-libgcc
+	cd ../..
 }
 
 function setup_limine {

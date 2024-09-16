@@ -1,3 +1,3 @@
 #!/bin/bash
 
-export PATH=$(realpath $(dirname "$0")/cross/prefix/bin):$PATH
+export PATH=$(realpath ./tools/cross/prefix/bin):$PATH

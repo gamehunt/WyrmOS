@@ -3,6 +3,7 @@ c = 'x86_64-elf-gcc'
 cpp = 'x86_64-elf-g++'
 ar = 'x86_64-elf-ar'
 strip = 'x86_64-elf-strip'
+nasm = 'nasm'
 
 [host_machine]
 system = 'linux'
