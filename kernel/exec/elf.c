@@ -1,5 +1,8 @@
 #include "dev/log.h"
 #include "exec/module.h"
+#include "mem/mem.h"
+#include "mem/paging.h"
+#include "proc/process.h"
 #include "symbols.h"
 #include <assert.h>
 #include <exec/elf.h>
@@ -7,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <util.h>
 
 uint8_t k_elf_check(void* elf) {
 	elf_ident* ident = elf;
@@ -194,7 +198,7 @@ extern void __attribute__((noreturn)) __usr_jmp(uintptr_t entry, uintptr_t stack
 int k_elf_exec(void* elf, int argc, const char** argv, const char** envp) {
 	uint8_t version = k_elf_check(elf);
 	if(version != ELF_CLASS64) {
-		k_error("Invalid e_ident.");
+		k_error("Invalid e_ident: %d", version);
 		return -1;
 	}
 
@@ -204,13 +208,41 @@ int k_elf_exec(void* elf, int argc, const char** argv, const char** envp) {
 		return -1;
 	}
 
-	phdr64* phdr = elf + header->e_phoff;
+	phdr64*   phdr = elf + header->e_phoff;
+    uintptr_t exec_end = 0;
 	for(size_t i = 0; i < header->e_phnum; i++) {
-		k_debug("%d", phdr->p_type);
+        switch(phdr->p_type) {
+            case PT_LOAD:
+            k_debug("Allocating section: %#.16lx - %#.16lx", phdr->p_vaddr, phdr->p_vaddr + phdr->p_memsz);
+            uintptr_t start = 0;
+            size_t pages = 0;
+            if(phdr->p_vaddr % PAGE_SIZE) {
+                start = phdr->p_vaddr & ~(PAGE_SIZE - 1);
+                pages = PAGES(phdr->p_memsz + (phdr->p_vaddr & (PAGE_SIZE - 1)));
+            } else {
+                start = phdr->p_vaddr;
+                pages = PAGES(phdr->p_memsz);
+            }
+            uintptr_t end = start + pages * PAGE_SIZE;
+            k_debug("Aligning to: %#.16lx - %#.16lx", start, end);
+            k_mem_paging_map_pages_ex(start, pages, 0, PM_FL_USER); 
+            if(end > exec_end) {
+                exec_end = end;
+            }
+            memset((void*) phdr->p_vaddr, 0, phdr->p_memsz);
+            memcpy((void*) phdr->p_vaddr, elf + phdr->p_offset, phdr->p_filesz);
+            break;
+        }
 		phdr = ((void*) phdr) + header->e_phentsize;
 	}
 
-	__usr_jmp(0x0, 0x0);
+    k_mem_paging_map_pages_ex(exec_end, PAGES(USER_STACK_SIZE), 0, PM_FL_USER);
+    k_debug("Allocated %dB user stack at %#.16lx", USER_STACK_SIZE, exec_end);
+
+    k_debug("Entry: %#.16lx", header->e_entry);
+    
+    k_mem_set_kernel_stack((uintptr_t) __current_process->ctx.kernel_stack);
+	__usr_jmp(header->e_entry, exec_end + USER_STACK_SIZE);
 }
 
 EXPORT(k_elf_check)

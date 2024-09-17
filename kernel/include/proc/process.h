@@ -12,7 +12,7 @@ typedef struct {
 	uint64_t    rbp;
 	uint64_t    rip;
 
-	union page* pml;
+	volatile union page* pml;
 	void*       kernel_stack;
 } context;
 
@@ -27,8 +27,10 @@ typedef struct {
 
 typedef int(*tasklet)(void);
 
-INTERNAL void k_process_init();
+extern volatile process* __current_process;
+#define current_process __current_process
 
+INTERNAL void k_process_init();
 
 process* k_process_create(const char* name);
 void     k_process_spawn(process* p, process* parent);

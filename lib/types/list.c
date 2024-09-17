@@ -52,7 +52,8 @@ void list_append(list* l, list_node* n) {
 void list_prepend(list* l, list_node* n) {
 	assert(l != NULL);
 	if(!l->head) {
-		return list_append(l, n);
+		list_append(l, n);
+        return;
 	} else {
 		n->owner = l;
 		l->head->prev = n;
@@ -91,6 +92,7 @@ list_node* list_pop_back(list* l) {
 	n->next  	  = NULL;
 	n->prev  	  = NULL;
 	n->owner 	  = NULL;
+    l->size--;
 	return n;
 }
 
@@ -105,6 +107,7 @@ list_node* list_pop_front(list* l) {
 	n->owner = NULL;
 	l->head = l->head->next;
 	l->head->prev = NULL;
+    l->size--;
 	return n;
 }
 

@@ -1,3 +1,4 @@
+#include "dev/log.h"
 #include "globals.h"
 #include <mem/mem.h>
 #include <mem/pmm.h>
@@ -52,7 +53,7 @@ union descriptor __encode_descriptor(uint32_t base, uint32_t limit, uint8_t acce
 	return result;
 }
 
-struct tss tss;
+volatile struct tss tss;
 
 #define ACC_RW        (1 << 1)
 #define ACC_DIRECTION (1 << 2)

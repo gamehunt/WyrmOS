@@ -16,8 +16,8 @@
 static tree* __process_tree;
 static list* __process_list;
 
-static volatile process* __current_process;
-static process* __idle_process;
+volatile process* __current_process;
+static process*   __idle_process;
 
 static list* __ready_queue;
 
@@ -34,7 +34,8 @@ static void __k_proc_load_context(volatile context* ctx) {
 	__builtin_unreachable();
 }
 
-void k_process_yield() {
+// FIXME crashes with -O2
+void __attribute__((optimize("O1")))  k_process_yield() {
 	volatile process* old = __current_process;
 	list_node* new = list_pop_back(__ready_queue);
 	if(new) {
@@ -63,7 +64,8 @@ static void* __k_process_alloc_kernel_stack() {
 
 static process* __k_process_create_init() {
 	process* prc = k_process_create("[init]");
-	prc->ctx.pml = k_mem_paging_get_root_pml();
+	prc->ctx.pml = k_mem_paging_clone_pml(NULL);
+    k_mem_paging_set_pml(prc->ctx.pml);
 	return prc;
 }
 

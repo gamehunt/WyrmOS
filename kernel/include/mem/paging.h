@@ -39,10 +39,10 @@ extern addr __high_map_addr;
 
 int k_mem_paging_init();
 
-union page* k_mem_paging_get_current_pml();
-union page* k_mem_paging_get_root_pml();
-union page* k_mem_paging_clone_pml(union page* pml);
-void        k_mem_paging_set_pml(union page* pml);
+volatile union page* k_mem_paging_get_current_pml();
+volatile union page* k_mem_paging_get_root_pml();
+volatile union page* k_mem_paging_clone_pml(volatile union page* pml);
+void k_mem_paging_set_pml(volatile union page* pml);
 
 uintptr_t k_mem_paging_get_physical(addr vaddr);
 void k_mem_paging_map_ex(addr vaddr, addr paddr, uint8_t flags);

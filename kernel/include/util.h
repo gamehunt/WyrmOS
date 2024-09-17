@@ -11,7 +11,9 @@
 #define TB(x) (GB(x) * 1024)
 
 #define ALIGN(value, alignment) \
-	(value + (-value & (alignment - 1)))
+	((value) + (-(value) & ((alignment) - 1)))
+#define PAGES(size) \
+    (ALIGN((size), PAGE_SIZE) / PAGE_SIZE)
 
 
 #endif

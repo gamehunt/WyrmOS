@@ -78,6 +78,7 @@ void kernel_main(void) {
 
 	k_load_modules();
 	k_process_init();
+    k_exec_init();
 
 	int r = k_exec("/bin/init", 0, NULL, NULL);
 	if(r != 0) {

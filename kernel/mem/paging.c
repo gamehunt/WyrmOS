@@ -22,8 +22,8 @@ static volatile struct limine_hhdm_request hhdm_request = {
 
 addr __high_map_addr = 0;
 
-static union page* __root_pml = NULL;
-static union page* __pml      = NULL;
+static volatile union page* __root_pml = NULL;
+static volatile union page* __pml      = NULL;
 
 extern union page* __get_pml(uint64_t map);
 extern addr __get_pagefault_address();
@@ -40,11 +40,11 @@ int k_mem_paging_init() {
 	return 0;
 }
 
-union page* k_mem_paging_get_current_pml() {
+volatile union page* k_mem_paging_get_current_pml() {
 	return __pml;
 }
 
-union page* k_mem_paging_get_root_pml() {
+volatile union page* k_mem_paging_get_root_pml() {
 	return __root_pml;
 }
 
@@ -58,7 +58,7 @@ void k_mem_paging_map_ex(addr vaddr, addr paddr, uint8_t flags) {
 
 	uint16_t layers[4] = {pme, pdp, pde, pte};
 
-	union page* pg = __pml;
+	volatile union page* pg = __pml;
 
 	for(int i = 0; i < 4; i++) {
 		uint16_t index = layers[i];
@@ -104,7 +104,7 @@ void k_mem_paging_unmap(addr vaddr) {
 
 	uint16_t layers[4] = {pme, pdp, pde, pte};
 
-	union page* pg = __pml;
+	volatile union page* pg = __pml;
 
 	for(int i = 0; i < 4; i++) {
 		uint16_t index = layers[i];
@@ -120,12 +120,14 @@ void k_mem_paging_unmap(addr vaddr) {
 }
 
 uintptr_t k_mem_paging_get_physical(addr vaddr) {
-	uint32_t remainder = vaddr & (PAGE_SIZE - 1);
+	uint64_t remainder = vaddr & (PAGE_SIZE - 1);
 	vaddr &= ~(PAGE_SIZE - 1);
 
-	if(vaddr & HIGH_MAP) {
-		return vaddr & ~(HIGH_MAP);
-	}
+    assert(vaddr % PAGE_SIZE == 0);
+
+	// if(vaddr & HIGH_MAP) {
+	// 	return (vaddr & ~(HIGH_MAP)) + remainder;
+	// }
 
 	uint16_t pme = PME(vaddr);
 	uint16_t pdp = PDP(vaddr);
@@ -136,7 +138,7 @@ uintptr_t k_mem_paging_get_physical(addr vaddr) {
 
 	uint16_t layers[4] = {pme, pdp, pde, pte};
 
-	union page* pg = __pml;
+	volatile union page* pg = __pml;
 
 	for(int i = 0; i < 4; i++) {
 		uint16_t index = layers[i];
@@ -153,18 +155,18 @@ uintptr_t k_mem_paging_get_physical(addr vaddr) {
 	return 0;
 }
 
-union page* k_mem_paging_clone_pml(union page* pml) {
+volatile union page* k_mem_paging_clone_pml(volatile union page* pml) {
 	union page* copy = vmalloc(PAGE_SIZE);
 	if(!pml) {
 		pml = __root_pml;
 	}
-	memcpy(copy, pml, PAGE_SIZE);
+	memcpy(copy, (const void*) pml, PAGE_SIZE);
 	return copy;
 }
 
 extern void __set_pml(uintptr_t phys);
 
-void k_mem_paging_set_pml(union page* pml) {
+void k_mem_paging_set_pml(volatile union page* pml) {
 	if(!pml) {
 		pml = __root_pml;
 	}

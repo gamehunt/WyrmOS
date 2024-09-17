@@ -11,6 +11,7 @@
 #define SYMTABLE      (HEAP_END + 0x1000)
 #define VIRTUAL_BASE  0xffffffff80000000UL
 #define KERNEL_LOWEST_ADDRESS HEAP_START
+#define USER_STACK_SIZE KB(16)
 
 typedef uint64_t addr;
 
