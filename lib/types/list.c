@@ -144,12 +144,19 @@ void list_remove(list* l, size_t i) {
 
 void list_delete(list* l, list_node* n) {
 	assert(l != NULL);
+	assert(n->owner == l);
 	if(n->prev) {
 		n->prev->next = n->next;
 	}
 	if(n->next) {
 		n->next->prev = n->prev;
 	}
+    if(n == l->head) {
+        l->head = n->next;
+    }
+    if(n == l->tail) {
+        l->tail = n->prev;
+    }
 	free(n);
 	l->size--;
 }
@@ -162,4 +169,53 @@ list_node* list_find_cmp(list* l, void* v, comparator cmp) {
 		}
 	}
 	return NULL;
+}
+
+void list_swap(list_node* a, list_node* b) {
+    assert(a->owner == b->owner);
+    if(a->prev) {
+        a->prev->next = b;
+    }
+    if(a->next) {
+        a->next->prev = b;
+    }
+    if(b->next) {
+        b->next->prev = a;
+    }
+    if(b->prev) {
+        b->prev->next = a;
+    }
+    void* tmp = a->next;
+    a->next = b->next;
+    b->next = tmp;
+    tmp = a->prev;
+    a->prev = b->prev;
+    b->prev = tmp;
+
+    if(!a->next) {
+        a->owner->tail = a;
+    } else if(!b->next) {
+        b->owner->tail = b;
+    }
+
+    if(!a->prev) {
+        a->owner->head = a;
+    } else if(!b->prev) {
+        b->owner->head = b;
+    }
+}
+
+void list_sort_cmp(list* list, comparator cmp) {
+    if(list->size == 0) {
+        return;
+    }
+    list_node* a = list->head->next;
+    while(a != NULL) {
+        list_node* b = a;
+        while(b->prev && cmp(b->prev->value, b->value) > 0) {
+            list_swap(b->prev, b);
+            b = b->prev;
+        }
+        a = a->next;
+    }
 }

@@ -36,6 +36,4 @@ process* k_process_create(const char* name);
 void     k_process_spawn(process* p, process* parent);
 void     k_process_yield();
 
-int k_process_spawn_tasklet(const char* name, tasklet t);
-
 #endif

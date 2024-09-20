@@ -52,10 +52,6 @@ void __attribute__((optimize("O1")))  k_process_yield() {
 	__k_proc_load_context(&__current_process->ctx);
 }
 
-int k_process_spawn_tasklet(const char* name, tasklet t) {
-	return -1;
-}
-
 static void* __k_process_alloc_kernel_stack() {
 	void* mem = (kmalloc_aligned(KERNEL_STACK_SIZE, 16));
 	memset(mem, 0, KERNEL_STACK_SIZE);
@@ -127,5 +123,4 @@ void k_process_init() {
 
 EXPORT(k_process_init)
 EXPORT(k_process_spawn)
-EXPORT(k_process_spawn_tasklet)
 EXPORT(k_process_yield)

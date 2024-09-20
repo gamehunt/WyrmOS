@@ -1,4 +1,3 @@
-#include "dev/log.h"
 #include "proc/process.h"
 #include <dev/timer.h>
 #include <dev/pit.h>

@@ -1,3 +1,5 @@
+#include "dev/acpi.h"
+#include "dev/pci.h"
 #include "exec/exec.h"
 #include "exec/initrd.h"
 #include "exec/module.h"
@@ -60,12 +62,14 @@ void kernel_main(void) {
 	k_cpu_int_init();
 	k_fs_init();
 	k_dev_log_init();
+    k_dev_pci_init();
 	k_setup_symbols();
 
 	if(!module_request.response || !module_request.response->module_count) {
 		panic(NULL, "Failed to load initrd.");
 	}
 
+    k_exec_init();
 	k_exec_initrd_init();
 
 	struct limine_file** initrds = module_request.response->modules;
@@ -78,7 +82,6 @@ void kernel_main(void) {
 
 	k_load_modules();
 	k_process_init();
-    k_exec_init();
 
 	int r = k_exec("/bin/init", 0, NULL, NULL);
 	if(r != 0) {

@@ -156,11 +156,11 @@ uintptr_t k_mem_paging_get_physical(addr vaddr) {
 }
 
 volatile union page* k_mem_paging_clone_pml(volatile union page* pml) {
-	union page* copy = vmalloc(PAGE_SIZE);
+	volatile union page* copy = vmalloc(PAGE_SIZE);
 	if(!pml) {
 		pml = __root_pml;
 	}
-	memcpy(copy, (const void*) pml, PAGE_SIZE);
+	memcpy((void*) copy, (const void*) pml, PAGE_SIZE);
 	return copy;
 }
 

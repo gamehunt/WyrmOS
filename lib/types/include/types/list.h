@@ -41,6 +41,10 @@ void  	   list_delete(list*, list_node*);
 list_node* list_find_cmp(list*, void*, comparator);
 #define list_find(list, v) list_find_cmp(list, v, DEFAULT_COMPARATOR)
 
+void list_swap(list_node*, list_node*);
+void list_sort_cmp(list*, comparator);
+#define list_sort(list) list_sort_cmp(list, DEFAULT_COMPARATOR)
+
 #define foreach(element, list) \
 	for(list_node* element = (list)->head; element != NULL; element = element->next)
 

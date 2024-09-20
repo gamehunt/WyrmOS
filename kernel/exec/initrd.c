@@ -153,7 +153,7 @@ static fs_node* __initrd_open(fs_node* root, path* p, uint16_t flags) {
 }
 
 static fs_node* __initrd_mount_callback(const char* name, fs_node* device) {
-	fs_node* initrd = k_fs_alloc_fsnode(name);
+	fs_node* initrd  = k_fs_alloc_fsnode(name);
 	initrd->meta     = __parse_tar_module(device);	
 	initrd->ops.open = __initrd_open;
 	initrd->fsid     = INITRD_FSID;

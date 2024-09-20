@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 
+/* Executor should clean data itself before proceeding further */
 typedef int(*exec_func)(void* data, int argc, const char** argv, const char** envp);
 typedef int(*fmt_checker)(void* data, size_t size);
 

@@ -27,6 +27,7 @@ exec_func __find_func_for_format(void* file, size_t size) {
 static int __elf_checker(void* file, size_t size) {
     return k_elf_check(file) == ELF_CLASS64;
 }
+
 static executor __elf_executor = {.func = &k_elf_exec, .checker = &__elf_checker};
 
 void k_exec_init() {

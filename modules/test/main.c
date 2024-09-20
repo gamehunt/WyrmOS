@@ -2,6 +2,7 @@
 #include <exec/module.h>
 
 DEFINE_MODULE("test", load, unload)
+PROVIDES("test")
 
 int load() {
 	k_info("[test] Module loaded!");

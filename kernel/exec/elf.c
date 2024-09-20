@@ -236,6 +236,8 @@ int k_elf_exec(void* elf, int argc, const char** argv, const char** envp) {
 		phdr = ((void*) phdr) + header->e_phentsize;
 	}
 
+    free(elf);
+
     k_mem_paging_map_pages_ex(exec_end, PAGES(USER_STACK_SIZE), 0, PM_FL_USER);
     k_debug("Allocated %dB user stack at %#.16lx", USER_STACK_SIZE, exec_end);
 

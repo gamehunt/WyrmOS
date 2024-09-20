@@ -10,7 +10,7 @@
 #define _page_aligned __attribute__((aligned(PAGE_SIZE)))
 
 #define HIGH_MAP __high_map_addr
-#define TO_VIRTUAL(phys)  (phys | HIGH_MAP)
+#define TO_VIRTUAL(phys)  ((phys) | HIGH_MAP)
 #define TO_PHYSICAL(virt) (k_mem_paging_get_physical(virt))
 
 #define PM_FL_USER (1 << 0)

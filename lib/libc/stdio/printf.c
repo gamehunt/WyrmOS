@@ -110,7 +110,7 @@ static int __emit_str(const char* str, __printf_params* par, uint8_t is_raw,  __
 	while(str[i]) {
 		emitter(str[i], data);
 		i++;
-		if(is_raw && par->precision && i > par->precision) {
+		if(is_raw && par->precision && i >= par->precision) {
 			return i;
 		}
 	}
@@ -368,7 +368,7 @@ static int __vprintf_generic(const char* format, va_list arg_ptr, __char_emitter
 					written += emitter(va_arg(arg_ptr, int), data);
 					break;
 				case 's':
-					written += __emit_str(va_arg(arg_ptr, const char*),&params, 1, emitter, data);
+					written += __emit_str(va_arg(arg_ptr, const char*), &params, 1, emitter, data);
 					break;
 				case 'd':
 				case 'i':
