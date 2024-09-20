@@ -58,6 +58,12 @@ typedef struct {
     acpi_pci_space_entry conf_spaces[];
 }__attribute__ ((packed)) acpi_mcfg;
 
+typedef struct {
+    acpi_header header;
+    uint32_t    lapic;
+    uint32_t    flags;
+}__attribute__ ((packed)) acpi_madt;
+
 acpi_header* k_dev_acpi_find_table(const char* table);
 
 #endif

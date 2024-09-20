@@ -5,6 +5,7 @@
 #include "mem/alloc.h"
 #include "mem/mem.h"
 #include "mem/paging.h"
+#include "proc/smp.h"
 #include "types/list.h"
 #include "types/tree.h"
 
@@ -119,6 +120,7 @@ void k_process_init() {
 	__current_process = init;
 
 	k_dev_timer_init();
+    k_proc_init_cores();
 }
 
 EXPORT(k_process_init)

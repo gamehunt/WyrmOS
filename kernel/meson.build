@@ -28,7 +28,9 @@ srcs = [
   'exec/module.c',
   'exec/exec.c',
   'proc/process.c',
-  'proc/process.asm'
+  'proc/process.asm',
+  'proc/smp.asm',
+  'proc/smp.c'
 ]
 link_script = meson.current_source_dir() / 'link.ld'
 

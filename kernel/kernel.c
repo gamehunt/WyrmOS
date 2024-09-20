@@ -1,9 +1,7 @@
-#include "dev/acpi.h"
 #include "dev/pci.h"
 #include "exec/exec.h"
 #include "exec/initrd.h"
 #include "exec/module.h"
-#include "mem/paging.h"
 #include "panic.h"
 #include "proc/process.h"
 #include <string.h>
