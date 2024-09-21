@@ -6,8 +6,7 @@
 
 typedef void(*timer_callback)(regs*);
 
-INTERNAL void k_dev_timer_init();
-
-void k_dev_timer_add_callback(timer_callback);
+void     k_dev_timer_add_callback(timer_callback);
+uint64_t k_dev_timer_ticks();
 
 #endif

@@ -34,6 +34,14 @@ srcs = [
 ]
 link_script = meson.current_source_dir() / 'link.ld'
 
+tgt_arch    = get_option('arch')
+arch_folder = '/'.join(['arch', tgt_arch])
+subdir(arch_folder)
+
+foreach src : arch_srcs
+    srcs += '/'.join([arch_folder, src])
+endforeach
+
 prebuilt_kernel = executable(
   'wyrm.bin.0',
   sources: srcs,

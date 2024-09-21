@@ -118,7 +118,6 @@ void k_process_init() {
 	__process_tree  = init->tree_node;
 	current_core->current_process = init;
 
-	k_dev_timer_init();
     k_proc_init_cores();
 }
 
