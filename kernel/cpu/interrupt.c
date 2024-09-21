@@ -168,8 +168,12 @@ void k_cpu_int_init() {
 	setup_isr(47, "IRQ16");
 
 	k_cpu_setup_syscalls();
-	load_interrupt_table(&idt_pointer);
+    k_cpu_int_flush_idt();
 	k_cpu_pic_init();
+}
+
+void k_cpu_int_flush_idt() {
+	load_interrupt_table(&idt_pointer);
 }
 
 void k_cpu_int_setup_handler(uint8_t interrupt, interrupt_handler handler) {

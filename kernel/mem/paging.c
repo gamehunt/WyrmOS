@@ -1,9 +1,9 @@
 #include <mem/paging.h>
-#include "dev/log.h"
 #include "mem/alloc.h"
 #include "mem/pmm.h"
 #include "cpu/interrupt.h"
 #include "panic.h"
+#include "proc/process.h"
 #include "symbols.h"
 #include <boot/limine.h>
 #include <assert.h>
@@ -23,7 +23,6 @@ static volatile struct limine_hhdm_request hhdm_request = {
 addr __high_map_addr = 0;
 
 static volatile union page* __root_pml = NULL;
-static volatile union page* __pml      = NULL;
 
 extern union page* __get_pml(uint64_t map);
 extern addr __get_pagefault_address();
@@ -33,15 +32,15 @@ static void __handle_pagefault(regs* r) {
 }
 
 int k_mem_paging_init() {
-	__high_map_addr = hhdm_request.response->offset;
-	__pml           = __get_pml(__high_map_addr);
-	__root_pml      = __pml;
+	__high_map_addr   = hhdm_request.response->offset;
+	current_core->pml =  __get_pml(__high_map_addr);
+	__root_pml        = current_core->pml;
 	k_cpu_int_setup_handler(14, __handle_pagefault);
 	return 0;
 }
 
 volatile union page* k_mem_paging_get_current_pml() {
-	return __pml;
+	return current_core->pml;
 }
 
 volatile union page* k_mem_paging_get_root_pml() {
@@ -58,7 +57,7 @@ void k_mem_paging_map_ex(addr vaddr, addr paddr, uint8_t flags) {
 
 	uint16_t layers[4] = {pme, pdp, pde, pte};
 
-	volatile union page* pg = __pml;
+	volatile union page* pg = current_core->pml;
 
 	for(int i = 0; i < 4; i++) {
 		uint16_t index = layers[i];
@@ -104,7 +103,7 @@ void k_mem_paging_unmap(addr vaddr) {
 
 	uint16_t layers[4] = {pme, pdp, pde, pte};
 
-	volatile union page* pg = __pml;
+	volatile union page* pg = current_core->pml;
 
 	for(int i = 0; i < 4; i++) {
 		uint16_t index = layers[i];
@@ -138,7 +137,7 @@ uintptr_t k_mem_paging_get_physical(addr vaddr) {
 
 	uint16_t layers[4] = {pme, pdp, pde, pte};
 
-	volatile union page* pg = __pml;
+	volatile union page* pg = current_core->pml;
 
 	for(int i = 0; i < 4; i++) {
 		uint16_t index = layers[i];
@@ -170,7 +169,7 @@ void k_mem_paging_set_pml(volatile union page* pml) {
 	if(!pml) {
 		pml = __root_pml;
 	}
-	__pml = pml;
+	current_core->pml = pml;
 	uintptr_t phys = k_mem_paging_get_physical((addr) pml);
 	assert(phys != 0);
 	__set_pml(phys);

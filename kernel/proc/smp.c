@@ -1,7 +1,10 @@
 #include <proc/smp.h>
+#include "cpu/interrupt.h"
 #include "dev/acpi.h"
 #include "dev/log.h"
 #include "boot/limine.h"
+#include "mem/mem.h"
+#include "proc/process.h"
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_smp_request cores_request = {
@@ -10,8 +13,10 @@ static volatile struct limine_smp_request cores_request = {
 };
 
 static void __init_core(struct limine_smp_info* info) {
-    // TODO
-    while(1);
+    k_mem_flush_gdt();
+    k_process_set_core(&cores[info->extra_argument]);
+    k_cpu_int_flush_idt();
+    k_process_init_core();
 }
 
 static int __try_bootloader() {
@@ -27,7 +32,8 @@ static int __try_bootloader() {
         if(response->cpus[core]->lapic_id == response->bsp_lapic_id) {
             continue;
         }
-        response->cpus[core]->goto_address = __init_core;
+        response->cpus[core]->extra_argument = core;
+        response->cpus[core]->goto_address   = __init_core;
     }
 
     return 1;

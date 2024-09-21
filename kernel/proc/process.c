@@ -16,11 +16,10 @@
 
 static tree* __process_tree;
 static list* __process_list;
-
-volatile process* __current_process;
-static process*   __idle_process;
-
 static list* __ready_queue;
+
+struct core cores[] = {0};
+int core_count = 0;
 
 extern __attribute__((noreturn))      void __load_ctx(volatile context* ctx);
 extern __attribute__((returns_twice)) int  __save_ctx(volatile context* ctx);
@@ -37,20 +36,20 @@ static void __k_proc_load_context(volatile context* ctx) {
 
 // FIXME crashes with -O2
 void __attribute__((optimize("O1")))  k_process_yield() {
-	volatile process* old = __current_process;
+	volatile process* old = current_core->current_process;
 	list_node* new = list_pop_back(__ready_queue);
 	if(new) {
-		__current_process = new->value;	
+		current_core->current_process = new->value;	
 	} else {
-		__current_process = __idle_process;
+		current_core->current_process = current_core->idle_process;
 	}
-	if(old != __idle_process) {
+	if(old != current_core->idle_process) {
 		list_prepend(__ready_queue, old->ready_node);
 		if(__save_ctx(&old->ctx)) {
 			return; // Return from switch
 		}
 	}
-	__k_proc_load_context(&__current_process->ctx);
+	__k_proc_load_context(&current_core->current_process->ctx);
 }
 
 static void* __k_process_alloc_kernel_stack() {
@@ -114,13 +113,24 @@ void k_process_init() {
 	process* init = __k_process_create_init();
 	k_process_spawn(init, NULL);
 
-	__idle_process = __k_process_create_idle();
+	current_core->idle_process = __k_process_create_idle();
 
 	__process_tree  = init->tree_node;
-	__current_process = init;
+	current_core->current_process = init;
 
 	k_dev_timer_init();
     k_proc_init_cores();
+}
+
+void k_process_init_core() {
+	current_core->idle_process    = __k_process_create_idle();
+	current_core->current_process = current_core->idle_process;
+    k_process_yield();
+}
+
+extern void __set_core_base(struct core* addr);
+void k_process_set_core(struct core* c) {
+    __set_core_base(c);
 }
 
 EXPORT(k_process_init)

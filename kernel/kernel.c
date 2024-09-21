@@ -2,6 +2,8 @@
 #include "exec/exec.h"
 #include "exec/initrd.h"
 #include "exec/module.h"
+#include "mem/paging.h"
+#include "mem/pmm.h"
 #include "panic.h"
 #include "proc/process.h"
 #include <string.h>
@@ -43,9 +45,8 @@ static volatile LIMINE_REQUESTS_START_MARKER;
 __attribute__((used, section(".requests_end_marker")))
 static volatile LIMINE_REQUESTS_END_MARKER;
 
+extern void __setup_capabilities();
 extern uintptr_t get_rsp(void);
-
-extern void __attribute__((noreturn)) __usr_jmp(uintptr_t entry, uintptr_t stack);
 void kernel_main(void) {
 	DEBUG_INIT();
 
@@ -56,7 +57,12 @@ void kernel_main(void) {
 		goto end;
     }
 
-	k_mem_init();
+    k_mem_gdt_init();
+
+    k_process_set_core(&cores[0]);
+
+	k_mem_paging_init();
+	k_mem_pmm_init();
 	k_cpu_int_init();
 	k_fs_init();
 	k_dev_log_init();

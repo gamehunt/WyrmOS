@@ -105,7 +105,10 @@ static void __init_descriptors() {
 	ext->reserved = 0;
 
 	k_mem_set_kernel_stack(__k_initial_stack);
+    k_mem_flush_gdt();
+}
 
+void k_mem_flush_gdt() {
 	load_descriptor_table(&gdt_pointer);
 	reload_segments();
 }
@@ -114,13 +117,7 @@ void k_mem_set_kernel_stack(uintptr_t stack) {
 	tss.rsp[0] = stack;
 }
 
-int k_mem_init() {
+int k_mem_gdt_init() {
 	__init_descriptors();
-
-	int r;
-	
-	_R(k_mem_paging_init(), r)
-	_R(k_mem_pmm_init(), r)
-
 	return 0;
 }

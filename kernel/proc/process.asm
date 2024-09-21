@@ -26,3 +26,15 @@ __usr_jmp:
 	push   rdi  ; rip
 	iretq
 
+global __set_core_base
+__set_core_base:
+    mov rax, rdi
+    mov rdx, rax
+    shr rdx, 32
+    mov ecx, 0xC0000101
+    wrmsr
+    mov ecx, 0xC0000102
+    wrmsr
+    swapgs
+    ret
+

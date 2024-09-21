@@ -20,6 +20,13 @@ align 4
 		jmp interrupt_stub
 %endmacro
 
+%macro _swapgs 0
+    cmp qword [rsp + 0x18], 0x08
+    je %%skip
+    swapgs
+%%skip:
+%endmacro
+
 global __syscall_stub
 __syscall_stub:
     push 0x0
@@ -79,6 +86,9 @@ ISR 	47 ; 16
 
 extern __dispatch_interrupt
 interrupt_stub:
+
+    _swapgs
+
 	push rax
 	push rbx
 	push rcx
@@ -115,6 +125,9 @@ interrupt_stub:
 	pop rcx
 	pop rbx
 	pop rax
+    
+
+    _swapgs
 
 	add rsp, 16
 

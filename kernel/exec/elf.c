@@ -243,7 +243,7 @@ int k_elf_exec(void* elf, int argc, const char** argv, const char** envp) {
 
     k_debug("Entry: %#.16lx", header->e_entry);
     
-    k_mem_set_kernel_stack((uintptr_t) __current_process->ctx.kernel_stack);
+    k_mem_set_kernel_stack((uintptr_t) current_core->current_process->ctx.kernel_stack);
 	__usr_jmp(header->e_entry, exec_end + USER_STACK_SIZE);
 }
 

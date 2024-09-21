@@ -17,7 +17,8 @@
 
 typedef uint64_t addr;
 
-INTERNAL int k_mem_init();
+INTERNAL int  k_mem_gdt_init();
+INTERNAL void k_mem_flush_gdt();
 INTERNAL void k_mem_set_kernel_stack(uintptr_t stack);
 
 #endif

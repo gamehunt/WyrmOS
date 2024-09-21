@@ -22,6 +22,7 @@ typedef struct registers regs;
 typedef void(*interrupt_handler)(regs*);
 
 INTERNAL void k_cpu_int_init();
+INTERNAL void k_cpu_int_flush_idt();
 void k_cpu_int_setup_handler(uint8_t interrupt, interrupt_handler handler);
 void k_cpu_int_setup_idt_entry(uint8_t num, uint64_t entry, uint16_t code, uint8_t attrib);
 
