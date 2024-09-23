@@ -1,5 +1,2 @@
-#include <arch/arch.h>
+#include <arch.h>
 
-uint64_t arch_ticks() {
-
-}

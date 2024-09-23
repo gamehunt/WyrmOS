@@ -1,3 +1,4 @@
+#include <arch.h>
 #include "dev/log.h"
 #include "exec/module.h"
 #include "mem/mem.h"
@@ -244,7 +245,7 @@ int k_elf_exec(void* elf, int argc, const char** argv, const char** envp) {
     k_debug("Entry: %#.16lx", header->e_entry);
     
     k_mem_set_kernel_stack((uintptr_t) current_core->current_process->ctx.kernel_stack);
-	__usr_jmp(header->e_entry, exec_end + USER_STACK_SIZE);
+	arch_user_jmp(header->e_entry, exec_end + USER_STACK_SIZE);
 }
 
 EXPORT(k_elf_check)

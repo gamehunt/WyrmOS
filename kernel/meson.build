@@ -1,24 +1,15 @@
 srcs = [
   'asm.c',
   'symbols.c',
-  'cpu/pic.c',
-  'cpu/interrupt.asm',
-  'cpu/interrupt.c',
   'cpu/syscall.c',
   'dev/serial.c',
   'dev/log.c',
-  'dev/pit.c',
-  'dev/timer.c',
   'dev/pci.c',
   'dev/acpi.c',
   'globals.c',
   'kernel.c',
   'panic.c',
-  'mem/mem.asm',
-  'mem/mem.c',
   'mem/alloc.c',
-  'mem/paging.c',
-  'mem/paging.asm',
   'mem/pmm.c',
   'mem/mmio.c',
   'fs/fs.c',
@@ -28,14 +19,9 @@ srcs = [
   'exec/module.c',
   'exec/exec.c',
   'proc/process.c',
-  'proc/process.asm',
-  'proc/smp.asm',
-  'proc/smp.c'
 ]
 link_script = meson.current_source_dir() / 'link.ld'
 
-tgt_arch    = get_option('arch')
-arch_folder = '/'.join(['arch', tgt_arch])
 subdir(arch_folder)
 
 foreach src : arch_srcs
@@ -45,7 +31,7 @@ endforeach
 prebuilt_kernel = executable(
   'wyrm.bin.0',
   sources: srcs,
-  include_directories: kernel_includes,
+  include_directories: [kernel_includes, arch_includes],
   nasm_args: [
     '-f',
     'elf64',

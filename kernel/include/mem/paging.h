@@ -6,7 +6,6 @@
 
 #include <mem/mem.h>
 
-#define PAGE_SIZE 0x1000
 #define _page_aligned __attribute__((aligned(PAGE_SIZE)))
 
 #define HIGH_MAP __high_map_addr

@@ -3,9 +3,9 @@
 #include "dev/acpi.h"
 #include "dev/log.h"
 #include "boot/limine.h"
+#include "mem/gdt.h"
 #include "mem/mem.h"
 #include "mem/mmio.h"
-#include "mem/paging.h"
 #include "proc/process.h"
 
 __attribute__((used, section(".requests")))

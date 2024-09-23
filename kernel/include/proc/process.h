@@ -8,15 +8,6 @@
 #define PROCESS_NAME_LENGTH 128
 
 typedef struct {
-	uint64_t    rsp;
-	uint64_t    rbp;
-	uint64_t    rip;
-
-	volatile union page* pml;
-	void*       kernel_stack;
-} context;
-
-typedef struct {
 	pid_t   pid;
 	char    name[PROCESS_NAME_LENGTH];
 	context ctx;

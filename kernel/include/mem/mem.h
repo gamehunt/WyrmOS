@@ -14,11 +14,9 @@
 #define VIRTUAL_BASE  0xffffffff80000000UL
 #define KERNEL_LOWEST_ADDRESS HEAP_START
 #define USER_STACK_SIZE KB(16)
+#define PAGE_SIZE 0x1000
 
 typedef uint64_t addr;
 
-INTERNAL int  k_mem_gdt_init();
-INTERNAL void k_mem_flush_gdt();
-INTERNAL void k_mem_set_kernel_stack(uintptr_t stack);
 
 #endif

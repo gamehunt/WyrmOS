@@ -1,7 +1,5 @@
 #include <proc/process.h>
 
-#include "dev/log.h"
-#include "dev/timer.h"
 #include "mem/alloc.h"
 #include "mem/mem.h"
 #include "mem/paging.h"
@@ -21,16 +19,14 @@ static list* __ready_queue;
 struct core cores[] = {0};
 int core_count = 0;
 
-extern __attribute__((noreturn))      void __load_ctx(volatile context* ctx);
-extern __attribute__((returns_twice)) int  __save_ctx(volatile context* ctx);
 
 static void __k_proc_load_context(volatile context* ctx) {
 	k_mem_paging_set_pml(ctx->pml);
-	k_mem_set_kernel_stack((uintptr_t) ctx->kernel_stack);
+	arch_set_kernel_stack((uintptr_t) ctx->kernel_stack);
 
 	asm volatile ("" ::: "memory");
 
-	__load_ctx(ctx);
+	arch_load_ctx(ctx);
 	__builtin_unreachable();
 }
 
@@ -45,7 +41,7 @@ void __attribute__((optimize("O1")))  k_process_yield() {
 	}
 	if(old != current_core->idle_process) {
 		list_prepend(__ready_queue, old->ready_node);
-		if(__save_ctx(&old->ctx)) {
+		if(arch_save_ctx(&old->ctx)) {
 			return; // Return from switch
 		}
 	}
@@ -127,9 +123,8 @@ void k_process_init_core() {
     k_process_yield();
 }
 
-extern void __set_core_base(struct core* addr);
 void k_process_set_core(struct core* c) {
-    __set_core_base(c);
+    arch_set_core_base(c);
 }
 
 EXPORT(k_process_init)

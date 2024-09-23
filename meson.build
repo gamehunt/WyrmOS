@@ -50,6 +50,10 @@ c_args_user = [
 
 kernel_includes = include_directories('kernel/include')
 
+tgt_arch      = get_option('arch')
+arch_folder   = '/'.join(['arch', tgt_arch])
+arch_includes = '/'.join([arch_folder, 'include'])
+
 subdir('lib')
 subdir('kernel')
 subdir('modules')

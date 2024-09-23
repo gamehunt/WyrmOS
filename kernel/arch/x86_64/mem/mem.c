@@ -1,7 +1,7 @@
-#include "dev/log.h"
 #include "globals.h"
 #include <mem/mem.h>
 #include <mem/pmm.h>
+#include <mem/gdt.h>
 #include <mem/paging.h>
 
 #include <asm.h>

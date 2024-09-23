@@ -57,13 +57,10 @@ void kernel_main(void) {
 		goto end;
     }
 
-    k_mem_gdt_init();
+    if(arch_init()) {
+        goto end;
+    }
 
-    k_process_set_core(&cores[0]);
-
-	k_mem_paging_init();
-	k_mem_pmm_init();
-	k_cpu_int_init();
 	k_fs_init();
 	k_dev_log_init();
     k_dev_pci_init();
