@@ -49,7 +49,7 @@ static const char* mmap_type2str(int type) {
 }
 
 static uint64_t* allocate_pmm_bitmap(uint64_t size) {
-	assert(size % 0x1000 == 0);
+	assert(size % PAGE_SIZE == 0);
 	uint64_t result = 0;
 	for(uint64_t i = 0; i < memmap_request.response->entry_count; i++) {
 		struct limine_memmap_entry* entry = memmap_request.response->entries[i];

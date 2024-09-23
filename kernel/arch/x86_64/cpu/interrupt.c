@@ -94,6 +94,9 @@ define_isr(44);
 define_isr(45);  
 define_isr(46);  
 define_isr(47); // 16  
+                
+define_isr(123); // APIC tick
+define_isr(125); // IPI NMI
 
 interrupt_handler handlers[MAX_INTERRUPT] = {0};
 const char* __isr_descs[MAX_INTERRUPT]    = {0};
@@ -166,6 +169,9 @@ void k_cpu_int_init() {
 	setup_isr(45, "IRQ14");
 	setup_isr(46, "IRQ15");
 	setup_isr(47, "IRQ16");
+
+    setup_isr(123, "APIC tick");
+    setup_isr(125, "NMI");
 
 	k_cpu_setup_syscalls();
     k_cpu_int_flush_idt();

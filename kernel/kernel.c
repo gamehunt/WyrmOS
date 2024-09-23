@@ -45,8 +45,6 @@ static volatile LIMINE_REQUESTS_START_MARKER;
 __attribute__((used, section(".requests_end_marker")))
 static volatile LIMINE_REQUESTS_END_MARKER;
 
-extern void __setup_capabilities();
-extern uintptr_t get_rsp(void);
 void kernel_main(void) {
 	DEBUG_INIT();
 
@@ -96,6 +94,6 @@ end:
 }
 
 void _start(void) {
-	__k_initial_stack = get_rsp();
+	__k_initial_stack = arch_get_stack();
 	kernel_main();
 }

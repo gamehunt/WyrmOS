@@ -3,6 +3,8 @@
 
 #include "arch.h"
 
+#define MAX_STACKTRACE_DEPTH 16
+
 void panic(regs* registers, const char* message, ...) __attribute__((noreturn));
 
 #endif

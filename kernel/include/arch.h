@@ -22,18 +22,29 @@ typedef struct {
 	void*       kernel_stack;
 } context;
 
-extern uint64_t arch_get_ticks();
 extern __attribute__((noreturn))      void arch_load_ctx(volatile context* ctx);
 extern __attribute__((returns_twice)) int  arch_save_ctx(volatile context* ctx);
 
 struct core;
 extern void arch_set_core_base(struct core* addr);
 
-extern void arch_user_jmp(uintptr_t entry, uintptr_t stack);
+extern void      arch_user_jmp(uintptr_t entry, uintptr_t stack);
+extern uintptr_t arch_get_stack();
 
+#ifdef __X86_64__
 extern void k_mem_set_kernel_stack(uintptr_t stack);
 #define arch_set_kernel_stack(stack) k_mem_set_kernel_stack(stack)
+extern uint64_t k_dev_read_tsc();
+#define arch_get_ticks() k_dev_read_tsc()
+extern uint64_t k_dev_get_cpu_speed();
+#define arch_get_cpu_speed() k_dev_get_cpu_speed()
+#define arch_pause() __builtin_ia32_pause()
+#endif
 
-int arch_init();
+void arch_stacktrace(regs* r);
+void arch_prepare_panic();
+void arch_dump(regs* r);
+
+int  arch_init();
 
 #endif

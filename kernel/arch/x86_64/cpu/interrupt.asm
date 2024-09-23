@@ -36,7 +36,10 @@ __syscall_stub:
 
 ISR 	0
 ISR 	1
-ISR     2
+global isr2
+isr2:
+    cli
+    hlt
 ISR 	3
 ISR 	4
 ISR 	5
@@ -83,6 +86,19 @@ ISR 	44
 ISR 	45
 ISR 	46
 ISR 	47 ; 16
+
+extern lapic_eoi
+global isr123 ; APIC tick
+isr123:
+    call lapic_eoi
+    push 0x0
+    push 123
+    jmp interrupt_stub
+
+global isr125 ; IPI NMI
+isr125:
+    cli
+    hlt
 
 extern __dispatch_interrupt
 interrupt_stub:

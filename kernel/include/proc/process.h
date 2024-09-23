@@ -6,6 +6,7 @@
 #include <sys/types.h>
 
 #define PROCESS_NAME_LENGTH 128
+#define MAX_CORES 32
 
 typedef struct {
 	pid_t   pid;
@@ -19,12 +20,14 @@ typedef struct {
 typedef int(*tasklet)(void);
 
 struct core {
+    uint32_t id;
+    uint32_t lapic_id;
     volatile process*    current_process;
     volatile process*    idle_process;
 	volatile union page* pml;
 };
 
-extern struct core cores[];
+extern struct core cores[MAX_CORES];
 extern int core_count;
 static struct core __seg_gs * const current_core = 0;
 

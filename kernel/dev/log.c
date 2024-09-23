@@ -1,12 +1,15 @@
 #include "debug.h"
 #include "fs/fs.h"
 #include "globals.h"
+#include "proc/spinlock.h"
 #include <stdarg.h>
 #include <dev/log.h>
 #include <stdio.h>
 #include <string.h>
 
 #define LOG_BUFFER_SIZE 1024
+
+static lock __log_global_lock = EMPTY_LOCK;
 
 static fs_node* __k_logdev = NULL;
 const char* __log_prefixes[] = {
@@ -34,6 +37,8 @@ void k_dev_log_init() {
 }
 
 void k_dev_log(enum LOG_LEVEL level, const char* format, ...) {
+    LOCK(__log_global_lock);
+
 	char buffer1[LOG_BUFFER_SIZE] = {0};
 	char buffer2[LOG_BUFFER_SIZE] = {0};
 
@@ -54,6 +59,8 @@ void k_dev_log(enum LOG_LEVEL level, const char* format, ...) {
 	}
 
 	__print_callback(__k_logdev, 0, bytes, (uint8_t*) buffer2);
+
+    UNLOCK(__log_global_lock);
 }
 
 EXPORT(k_dev_log)

@@ -16,7 +16,7 @@ static tree* __process_tree;
 static list* __process_list;
 static list* __ready_queue;
 
-struct core cores[] = {0};
+struct core cores[MAX_CORES] = {0};
 int core_count = 0;
 
 

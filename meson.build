@@ -53,6 +53,7 @@ kernel_includes = include_directories('kernel/include')
 tgt_arch      = get_option('arch')
 arch_folder   = '/'.join(['arch', tgt_arch])
 arch_includes = '/'.join([arch_folder, 'include'])
+arch_define   = ''.join('-D__', tgt_arch.to_upper(), '__')
 
 subdir('lib')
 subdir('kernel')

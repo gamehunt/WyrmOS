@@ -21,7 +21,7 @@ reload_segments:
 	mov ss, ax
 	ret
 
-global get_rsp
-get_rsp:
+global arch_get_stack
+arch_get_stack:
 	mov rax, rsp
 	ret

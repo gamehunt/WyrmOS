@@ -11,7 +11,7 @@
 #define PIT_MODE     0x43
 #define PIT_SCALE 1193180
 
-static void __tick(regs* r) {
+static void __pit_tick(regs* r) {
 	IRQ_ACK(0);
 
 	if(r->cs != 0x08) {
@@ -26,7 +26,7 @@ void k_dev_pit_init() {
     outb(PIT_CH0_DATA, divisor & 0xFF);  // Low byte
     outb(PIT_CH0_DATA, divisor >> 8);    // High byte
 
-    k_cpu_int_setup_irq_handler(0, __tick);
+    k_cpu_int_setup_irq_handler(0, __pit_tick);
 
 	k_cpu_pic_unmask_irq(0);
 }

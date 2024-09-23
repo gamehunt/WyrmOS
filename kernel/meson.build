@@ -20,7 +20,7 @@ srcs = [
   'exec/exec.c',
   'proc/process.c',
 ]
-link_script = meson.current_source_dir() / 'link.ld'
+link_script = meson.current_source_dir() / arch_folder / 'link.ld'
 
 subdir(arch_folder)
 
@@ -39,7 +39,8 @@ prebuilt_kernel = executable(
   ],
   c_args: [
     c_args_freestanding,
-    '-D__KERNEL'
+    '-D__KERNEL',
+    arch_define,
   ],
   link_args: [
     '-T', link_script, 
@@ -63,7 +64,8 @@ executable(
   include_directories: kernel_includes,
   c_args: [
     c_args_freestanding,
-    '-D__KERNEL'
+    '-D__KERNEL',
+    arch_define,
   ], 
   link_args: [
     '-T', link_script, 
