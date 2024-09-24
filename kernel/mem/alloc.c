@@ -2,6 +2,7 @@
 #include <mem/mem.h>
 #include <mem/paging.h>
 #include <panic.h>
+#include "proc/spinlock.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -25,7 +26,7 @@ struct slab {
 static void*  heap = (void*) HEAP_START;
 static struct slab* slabs[SLAB_AMOUNT] = { NULL };
 static struct slab* free_slabs = NULL;
-
+static lock heap_lock = EMPTY_LOCK;
 
 static void* __sbrk(size_t pages) {
 	assert(pages > 0);
@@ -230,8 +231,10 @@ struct slab* __get_slab(size_t bytes) {
 
 void* __attribute__ ((malloc))  kmalloc(size_t bytes) {
 	assert(bytes > 0);
+    LOCK(heap_lock);
 	struct slab* s = __get_slab(bytes);
 	void* item = __slab_pop(s);
+    UNLOCK(heap_lock);
 	return item;
 }
 
@@ -252,11 +255,13 @@ void kfree(void* mem) {
 
 	struct slab* s = (struct slab*) ((uintptr_t)mem & ~0xFFF);
 	
+    LOCK(heap_lock);
 	if(s->size > MAX_SLAB) {
 		__free_big_slab(s);
 	} else {
 		__slab_push(s, mem);
 	}
+    UNLOCK(heap_lock);
 }
 
 EXPORT(kfree);

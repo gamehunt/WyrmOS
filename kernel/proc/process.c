@@ -1,9 +1,11 @@
 #include <proc/process.h>
 
+#include "dev/log.h"
 #include "mem/alloc.h"
 #include "mem/mem.h"
 #include "mem/paging.h"
 #include "proc/smp.h"
+#include "proc/spinlock.h"
 #include "types/list.h"
 #include "types/tree.h"
 
@@ -19,6 +21,9 @@ static list* __ready_queue;
 struct core cores[MAX_CORES] = {0};
 int core_count = 0;
 
+static lock __process_queue_lock = EMPTY_LOCK;
+static lock __process_list_lock = EMPTY_LOCK;
+
 
 static void __k_proc_load_context(volatile context* ctx) {
 	k_mem_paging_set_pml(ctx->pml);
@@ -30,17 +35,32 @@ static void __k_proc_load_context(volatile context* ctx) {
 	__builtin_unreachable();
 }
 
+process* k_process_get_ready() {
+    LOCK(__process_queue_lock);
+    list_node* node = list_pop_back(__ready_queue);
+    process* proc = NULL; 
+    if(!node) {
+        proc = (process*) current_core->idle_process;
+    } else {
+        proc = node->value;
+    }
+    UNLOCK(__process_queue_lock);
+    return proc;
+}
+
+void k_process_make_ready(process* p) {
+    LOCK(__process_queue_lock);
+    list_prepend(__ready_queue, p->ready_node);
+    UNLOCK(__process_queue_lock);
+}
+
 // FIXME crashes with -O2
 void __attribute__((optimize("O1")))  k_process_yield() {
 	volatile process* old = current_core->current_process;
-	list_node* new = list_pop_back(__ready_queue);
-	if(new) {
-		current_core->current_process = new->value;	
-	} else {
-		current_core->current_process = current_core->idle_process;
-	}
+    process* new = k_process_get_ready();
+	current_core->current_process = new;	
 	if(old != current_core->idle_process) {
-		list_prepend(__ready_queue, old->ready_node);
+        k_process_make_ready((process*) old); 
 		if(arch_save_ctx(&old->ctx)) {
 			return; // Return from switch
 		}
@@ -90,6 +110,8 @@ process* k_process_create(const char* name) {
 }
 
 void k_process_spawn(process* p, process* parent) {
+    LOCK(__process_list_lock);
+
 	if(parent) {
 		p->tree_node = tree_append(parent->tree_node, p);
 	} else {
@@ -99,7 +121,11 @@ void k_process_spawn(process* p, process* parent) {
 	p->list_node = list_push_back(__process_list, p);
 	p->pid       = __process_list->size;
 
+    UNLOCK(__process_list_lock);
+
+    LOCK(__process_queue_lock);
 	p->ready_node = list_push_back(__ready_queue, p);
+    UNLOCK(__process_queue_lock);
 }
 
 void k_process_init() {
@@ -120,6 +146,7 @@ void k_process_init() {
 void k_process_init_core() {
 	current_core->idle_process    = __k_process_create_idle();
 	current_core->current_process = current_core->idle_process;
+    k_debug("core %d: ready", current_core->id);
     k_process_yield();
 }
 
@@ -130,3 +157,5 @@ void k_process_set_core(struct core* c) {
 EXPORT(k_process_init)
 EXPORT(k_process_spawn)
 EXPORT(k_process_yield)
+EXPORT(k_process_get_ready)
+EXPORT(k_process_set_core)

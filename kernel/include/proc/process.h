@@ -34,6 +34,8 @@ static struct core __seg_gs * const current_core = 0;
 INTERNAL void k_process_init();
 INTERNAL void k_process_init_core();
 
+process* k_process_get_ready();
+void     k_process_make_ready(process* p);
 process* k_process_create(const char* name);
 void     k_process_spawn(process* p, process* parent);
 void     k_process_yield();

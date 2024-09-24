@@ -1,6 +1,7 @@
 #include "dev/log.h"
 #include "mem/paging.h"
 #include "panic.h"
+#include "proc/spinlock.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -24,6 +25,7 @@ static uint64_t*  __pmm_mem_bitmap        = 0;
 static size_t     __pmm_bitmap_size       = 0;
 static size_t     __pmm_bitmap_free_index = 0;
 static uint8_t    __pmm_initialized       = 0;
+static lock       __pmm_lock              = EMPTY_LOCK;
 
 static const char* mmap_type2str(int type) {
 	switch(type) {
@@ -100,6 +102,8 @@ int k_mem_pmm_mark_region(frame start, size_t count) {
 }
 
 int k_mem_pmm_mark_frame(frame frame) {
+    LOCK(__pmm_lock);
+
 	size_t index = FRAME_INDEX(frame);
 
 	if(index > __pmm_bitmap_size) {
@@ -115,10 +119,13 @@ int k_mem_pmm_mark_frame(frame frame) {
 		__pmm_bitmap_free_index = index;
 	}
 
+    UNLOCK(__pmm_lock);
+
 	return 0;
 }
 
 frame k_mem_pmm_alloc(size_t frames) {
+    LOCK(__pmm_lock);
 
     if (__pmm_bitmap_free_index >= __pmm_bitmap_size) {
 		panic(NULL, "Out of memory.");
@@ -168,6 +175,8 @@ frame k_mem_pmm_alloc(size_t frames) {
 				&& !__pmm_mem_bitmap[__pmm_bitmap_free_index]) {
             __pmm_bitmap_free_index++;
         }
+
+        UNLOCK(__pmm_lock);
 
         return ADDR(frame_n);
     }

@@ -1,10 +1,13 @@
 #include <mem/paging.h>
+#include "dev/log.h"
 #include "mem/alloc.h"
+#include "mem/mem.h"
 #include "mem/pmm.h"
 #include "cpu/interrupt.h"
 #include "panic.h"
 #include "proc/process.h"
 #include "symbols.h"
+#include "util.h"
 #include <boot/limine.h>
 #include <assert.h>
 #include <string.h>
@@ -118,15 +121,9 @@ void k_mem_paging_unmap(addr vaddr) {
 	}
 }
 
-uintptr_t k_mem_paging_get_physical(addr vaddr) {
-	uint64_t remainder = vaddr & (PAGE_SIZE - 1);
-	vaddr &= ~(PAGE_SIZE - 1);
-
+uintptr_t k_mem_paging_get_physical(addr _vaddr) {
+    addr vaddr = (_vaddr & CANONICAL_MASK) & ~(PAGE_SIZE - 1);
     assert(vaddr % PAGE_SIZE == 0);
-
-	// if(vaddr & HIGH_MAP) {
-	// 	return (vaddr & ~(HIGH_MAP)) + remainder;
-	// }
 
 	uint16_t pme = PME(vaddr);
 	uint16_t pdp = PDP(vaddr);
@@ -144,10 +141,13 @@ uintptr_t k_mem_paging_get_physical(addr vaddr) {
 		if(!pg[index].bits.present) {
 			return 0;
 		}
+        if(pg[index].bits.size) {
+            return ADDR(pg[index].bits.page) + (_vaddr & (MB(2) - 1));
+        }
 		if(i < 3) {
 			pg = (union page*) TO_VIRTUAL(ADDR(pg[index].bits.page));
 		} else {
-			return ADDR(pg[index].bits.page) + remainder;
+			return ADDR(pg[index].bits.page) + (_vaddr & (PAGE_SIZE - 1));
 		}
 	}
 
@@ -172,6 +172,9 @@ void k_mem_paging_set_pml(volatile union page* pml) {
 	current_core->pml = pml;
 	uintptr_t phys = k_mem_paging_get_physical((addr) pml);
 	assert(phys != 0);
+    if(pml == __root_pml) {
+        assert((phys | HIGH_MAP) == (uintptr_t) pml);
+    }
 	__set_pml(phys);
 }
 
