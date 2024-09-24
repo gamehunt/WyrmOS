@@ -110,6 +110,7 @@ int k_mem_pmm_mark_frame(frame frame) {
 		if(!__pmm_initialized) {
 			__pmm_bitmap_size = index + 1;
 		} else {
+            UNLOCK(__pmm_lock);
 			return -1;
 		}
 	}

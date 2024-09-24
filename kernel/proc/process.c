@@ -83,9 +83,8 @@ static process* __k_process_create_init() {
 
 static void __k_process_idle_routine(void) {
 	while(1) {
-		asm volatile ("sti");
-		asm volatile ("hlt");
-		asm volatile ("cli");
+        arch_pause();
+        k_process_yield();
 	}
 }
 

@@ -3,6 +3,7 @@
 #include "dev/log.h"
 #include "mem/mem.h"
 #include "mem/paging.h"
+#include "proc/spinlock.h"
 #include "types/list.h"
 #include "util.h"
 #include "assert.h"
@@ -15,6 +16,7 @@ typedef struct {
 } iomap_region;
 
 static list* __iomapped_regions = NULL;
+static lock  __iomap_lock = EMPTY_LOCK;
 
 static int8_t __region_comparator(iomap_region* data, uintptr_t phys) {
     if(data->phys < phys) {
@@ -39,11 +41,13 @@ void* k_mem_iomap(uintptr_t phys, size_t size) {
     if(__mmio_start >= MMIO_END) {
         return NULL;
     }
+    LOCK(__iomap_lock);
     if(!__iomapped_regions) {
         __iomapped_regions = list_create();
     }
     void* r = __try_get_present(phys);
     if(r) {
+        UNLOCK(__iomap_lock);
         return r;
     }
     size_t pages = PAGES(size);
@@ -54,6 +58,7 @@ void* k_mem_iomap(uintptr_t phys, size_t size) {
     region->phys = phys;
     region->addr = r;
     list_push_back(__iomapped_regions, region);
+    UNLOCK(__iomap_lock);
     return r;
 }
 

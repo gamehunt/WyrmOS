@@ -41,8 +41,8 @@ struct extended_descriptor {
 	uint32_t         reserved;
 };
 
-union  descriptor gdt[MAX_CORES][7] = {0};
-struct gdtptr     gdt_pointer[MAX_CORES];
+union  descriptor gdt[MAX_CORES][7]      = {0};
+struct gdtptr     gdt_pointer[MAX_CORES] = {0};
 
 union descriptor __encode_descriptor(uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
 	union descriptor result;
@@ -102,7 +102,7 @@ static void __init_descriptors() {
 											 FL_GRAN); // User Data 0x20
 
 	struct extended_descriptor* ext = (void*) &gdt[0][5]; // TSS 0x28
-	ext->common = __encode_descriptor(((uintptr_t) &tss[0]) & 0xFFFFFFFF, sizeof(tss), ACC_PRESENT | ACC_EXEC | 1, FL_SIZE);
+	ext->common = __encode_descriptor(((uintptr_t) &tss[0]) & 0xFFFFFFFF, sizeof(tss[0]), ACC_PRESENT | ACC_EXEC | 1, FL_SIZE);
 	ext->high   = ((uintptr_t) &tss[0]) >> 32;
 	ext->reserved = 0;
 
@@ -117,7 +117,7 @@ void k_mem_flush_gdt(int core) {
     if(core != 0) {
         memcpy(&gdt[core], &gdt[0], sizeof(gdt[0]));
 	    struct extended_descriptor* ext = (void*) &gdt[core][5]; 
-	    ext->common = __encode_descriptor(((uintptr_t) &tss[core]) & 0xFFFFFFFF, sizeof(tss), ACC_PRESENT | ACC_EXEC | 1, FL_SIZE);
+	    ext->common = __encode_descriptor(((uintptr_t) &tss[core]) & 0xFFFFFFFF, sizeof(tss[0]), ACC_PRESENT | ACC_EXEC | 1, FL_SIZE);
 	    ext->high   = ((uintptr_t) &tss[core]) >> 32;
         memcpy((void*) &tss[core], (void*) &tss[0], sizeof(tss[0]));
         gdt_pointer[core].addr = (uint64_t) &gdt[core];
