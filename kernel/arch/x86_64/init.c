@@ -16,7 +16,6 @@ int arch_init() {
 	k_mem_pmm_init();
     k_dev_cmos_init();
 	k_cpu_int_init();
-    k_mem_paging_set_pml(NULL);
     return 0;
 }
 

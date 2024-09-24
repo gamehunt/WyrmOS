@@ -40,6 +40,7 @@ global isr2
 isr2:
     cli
     hlt
+    jmp isr2
 ISR 	3
 ISR 	4
 ISR 	5
@@ -99,6 +100,7 @@ global isr125 ; IPI NMI
 isr125:
     cli
     hlt
+    jmp isr125
 
 extern __dispatch_interrupt
 interrupt_stub:
