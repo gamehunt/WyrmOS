@@ -158,6 +158,12 @@ fs_node* k_fs_mount(const char* _path, const char* device, const char* type) {
 	return node->root;
 }
 
+static fs_node* __dup(fs_node* node) {
+    fs_node* new = malloc(sizeof(fs_node));
+    memcpy(new, node, sizeof(fs_node));
+    return new;
+}
+
 fs_node* k_fs_open(const char* _path, uint16_t flags) {
 	path* p = path_parse(_path);
 	path* left = path_create();
@@ -168,7 +174,7 @@ fs_node* k_fs_open(const char* _path, uint16_t flags) {
 			if(!mountpoint->root) {
 				result = __open_vfs(mountpoint);
 			} else {
-				result = mountpoint->root;
+				result = __dup(mountpoint->root);
 			}
 		} else if(mountpoint->root && mountpoint->root->ops.open){
 			result = mountpoint->root->ops.open(mountpoint->root, left, flags);
