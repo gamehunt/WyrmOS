@@ -6,6 +6,8 @@ srcs = [
   'dev/log.c',
   'dev/pci.c',
   'dev/acpi.c',
+  'dev/null.c',
+  'dev/random.c',
   'globals.c',
   'kernel.c',
   'panic.c',

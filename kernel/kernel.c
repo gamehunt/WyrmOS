@@ -1,4 +1,5 @@
 #include "dev/pci.h"
+#include "dev/misc.h"
 #include "exec/exec.h"
 #include "exec/initrd.h"
 #include "exec/module.h"
@@ -61,6 +62,8 @@ void kernel_main(void) {
 	k_dev_log_init();
     k_dev_pci_init();
 	k_setup_symbols();
+
+    k_dev_init_misc();
 
 	if(!module_request.response || !module_request.response->module_count) {
 		panic(NULL, "Failed to load initrd.");
