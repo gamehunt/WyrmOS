@@ -2,7 +2,7 @@
 #define __K_MEM_H 1
 
 #include <stdint.h>
-#include <symbols.h>
+#include <util.h>
 
 #define CANONICAL_MASK 0xFFFFffffFFFFUL
 
@@ -13,7 +13,8 @@
 #define SYMTABLE      0xffffff3000000000UL
 #define VIRTUAL_BASE  0xffffffff80000000UL
 #define KERNEL_LOWEST_ADDRESS HEAP_START
-#define USER_STACK_SIZE KB(16)
+#define USER_STACK_SIZE   KB(64)
+#define KERNEL_STACK_SIZE KB(32)
 #define PAGE_SIZE 0x1000
 
 typedef uint64_t addr;

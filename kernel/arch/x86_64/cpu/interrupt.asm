@@ -144,7 +144,6 @@ interrupt_stub:
 	pop rbx
 	pop rax
     
-
     _swapgs
 
 	add rsp, 16

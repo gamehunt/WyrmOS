@@ -239,13 +239,17 @@ int k_elf_exec(void* elf, int argc, const char** argv, const char** envp) {
 
     free(elf);
 
+    current_core->current_process->ctx.pml = k_mem_paging_clone_pml(NULL);
+    k_mem_paging_set_pml(current_core->current_process->ctx.pml);
     k_mem_paging_map_pages_ex(exec_end, PAGES(USER_STACK_SIZE), 0, PM_FL_USER);
-    k_debug("Allocated %dB user stack at %#.16lx", USER_STACK_SIZE, exec_end);
 
+    k_debug("Allocated %dB user stack at %#.16lx", USER_STACK_SIZE, exec_end);
     k_debug("Entry: %#.16lx", header->e_entry);
     
     k_mem_set_kernel_stack((uintptr_t) current_core->current_process->ctx.kernel_stack);
 	arch_user_jmp(header->e_entry, exec_end + USER_STACK_SIZE);
+
+    return -1;
 }
 
 EXPORT(k_elf_check)

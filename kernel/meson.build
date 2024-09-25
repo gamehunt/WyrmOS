@@ -40,6 +40,7 @@ prebuilt_kernel = executable(
   c_args: [
     c_args_freestanding,
     '-D__KERNEL',
+    '-DNO_LOCK_CHECKS',
     arch_define,
   ],
   link_args: [
@@ -65,6 +66,7 @@ executable(
   c_args: [
     c_args_freestanding,
     '-D__KERNEL',
+    '-DNO_LOCK_CHECKS',
     arch_define,
   ], 
   link_args: [

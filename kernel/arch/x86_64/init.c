@@ -70,11 +70,12 @@ void arch_dump(regs* r) {
 	k_crit("r8  = %#.16lx\tr9  = %#.16lx\tr10 = %#.16lx", r->r8, r->r9, r->r10);
 	k_crit("r11 = %#.16lx\tr12 = %#.16lx\tr13 = %#.16lx", r->r11, r->r12, r->r13);
 	k_crit("r14 = %#.16lx\tr15 = %#.16lx", r->r14, r->r15);
+    k_crit("cr3 = %#.16lx", k_mem_paging_get_current_pml());
 }
 
 void arch_prepare_panic() {
 	for (int i = 0; i < core_count; ++i) {
-		if (i == current_core->id) continue;
+		if (i == current_core->id || !cores[i].lapic_id) continue;
 		lapic_send_ipi(cores[i].lapic_id, 0x447D);
 	}
 }

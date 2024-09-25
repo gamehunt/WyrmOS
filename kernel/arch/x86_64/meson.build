@@ -4,6 +4,7 @@ arch_srcs = [
   'cpu/interrupt.asm',
   'cpu/interrupt.c',
   'cpu/pic.c',
+  'cpu/syscall.c',
   'dev/pit.c',
   'dev/cmos.c',
   'dev/cmos.asm',

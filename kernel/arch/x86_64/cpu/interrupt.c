@@ -1,6 +1,7 @@
+#include <assert.h>
 #include <cpu/interrupt.h>
+#include "cpu/_syscall.h"
 #include "cpu/pic.h"
-#include "cpu/syscall.h"
 #include "panic.h"
 
 #define MAX_INTERRUPT 256
@@ -30,18 +31,19 @@ extern void load_interrupt_table(struct idtptr* ptr);
 // 64-bit Trap Gate      - Kernel = 0x8F
 // 64-bit Interrupt Gate - User   = 0xEE
 // 64-bit Trap Gate      - User   = 0xEF
-void k_cpu_int_setup_idt_entry(uint8_t num, uint64_t entry, uint16_t code, uint8_t attrib) {
+void k_cpu_int_setup_idt_entry(uint8_t num, uint64_t entry, uint16_t code, uint8_t attrib, uint8_t ist) {
 	idt[num].selector = code;
 	idt[num].type_attributes = attrib;
 	idt[num].offset_low = entry & 0xFFFF;
 	idt[num].offset_mid = (entry >> 16) & 0xFFFF;
 	idt[num].offset_hi  = (entry >> 32) & 0xFFFFFFFF;
-	idt[num].ist  = 0;
+	idt[num].ist  = ist & 7;
 	idt[num].zero = 0;
 }
 
 #define define_isr(num) extern void isr##num(regs*); 
-#define setup_isr(num, desc) k_cpu_int_setup_idt_entry(num, (uint64_t) isr##num, 0x08, 0x8E); __isr_descs[num] = desc;
+#define setup_isr(num, desc) k_cpu_int_setup_idt_entry(num, (uint64_t) isr##num, 0x08, 0x8E, 0x0); __isr_descs[num] = desc;
+#define setup_df(num, desc) k_cpu_int_setup_idt_entry(num, (uint64_t) isr##num, 0x08, 0x8E, 0x1); __isr_descs[num] = desc;
 #define isr_desc(num) __isr_descs[(num)]
 
 define_isr(0);
@@ -127,7 +129,7 @@ void k_cpu_int_init() {
 	setup_isr(5,  "Bound range exceeded");
 	setup_isr(6,  "Invalid opcode");
 	setup_isr(7,  "Device not available");
-	setup_isr(8,  "Double fault");
+	setup_df (8,  "Double fault");
 	setup_isr(9,  "Coprocessor segment overrun");
 	setup_isr(10, "Invalid TSS");
 	setup_isr(11, "Segment not present");

@@ -1,5 +1,7 @@
 #include "arch.h"
 #include "mem/mem.h"
+#include "proc/process.h"
+#include "proc/spinlock.h"
 #include <panic.h>
 #include <asm.h>
 #include <dev/log.h>
@@ -11,10 +13,11 @@
 #define PANIC_WIDTH 20
 
 extern const char* __log_prefixes[];
-
+extern lock __log_global_lock;
 __attribute__((noreturn)) void panic(regs* r, const char* message, ...){
     arch_prepare_panic();
 	cli();
+    UNLOCK(__log_global_lock);
 	k_crit("Kernel panic!");
 	k_print("%s", __log_prefixes[CRITICAL]);
 	va_list ap;

@@ -1,6 +1,8 @@
 global arch_save_ctx ; context* ctx
 arch_save_ctx:
-    mov [rdi + 0], rsp ; Save ESP
+    lea rax, [rsp + 8]
+
+    mov [rdi + 0], rax ; Save ESP
     mov [rdi + 8], rbp ; Save EBP
 
     mov rax, [rsp]      ; Get EIP
@@ -19,11 +21,12 @@ arch_load_ctx:
 
 global arch_user_jmp ; uintptr_t entrypoint, uintptr_t stack
 arch_user_jmp:
-	push   0x23 ; ss
-	push   rsi  ; rsp
-	push   0x200200  ; rflags (INT | CPUID)
-	push   0x1b ; cs
-	push   rdi  ; rip
+	push 0x23 ; ss
+	push rsi  ; rsp
+	push 0x200200  ; rflags (INT | CPUID)
+	push 0x1b ; cs
+	push rdi  ; rip
+    swapgs
 	iretq
 
 global arch_set_core_base

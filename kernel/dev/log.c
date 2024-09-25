@@ -9,7 +9,7 @@
 
 #define LOG_BUFFER_SIZE 1024
 
-static lock __log_global_lock = EMPTY_LOCK;
+lock __log_global_lock = EMPTY_LOCK;
 
 static fs_node* __k_logdev = NULL;
 const char* __log_prefixes[] = {

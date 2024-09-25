@@ -1,25 +1,19 @@
-#include "cpu/interrupt.h"
 #include "dev/log.h"
 #include <cpu/syscall.h>
 #include <stddef.h>
 
-#define SYS_TEST 0
-
+typedef int (*syscall_handler)(uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, uintptr_t e, uintptr_t f);
 static const syscall_handler __syscall_table[] = {
 };
 
 static const size_t __syscall_amount = sizeof(__syscall_table) / sizeof(syscall_handler);
 
-void __syscall_dispatcher(regs* r) {
-	if(r->rax >= __syscall_amount || !__syscall_table[r->rax]) {
-		k_warn("Invalid syscall: %d", r->rax);
-		return;
+int k_invoke_syscall(uint64_t n, uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, uintptr_t e, uintptr_t f) {
+	if(n >= __syscall_amount || !__syscall_table[n]) {
+		k_warn("Invalid syscall: %ld", n);
+		return -1;
 	}	
-	r->rax = __syscall_table[r->rax](r->rdi, r->rsi, r->rdx, r->rcx, r->r8, r->r9);
+    return __syscall_table[n](a, b, c, d, e, f);
 }
 
-extern void __syscall_stub(regs*);
-void k_cpu_setup_syscalls() {
-	k_cpu_int_setup_idt_entry(SYSCALL_INT, (uint64_t) __syscall_stub, 0x08, 0xEE);
-    k_cpu_int_setup_handler(SYSCALL_INT, __syscall_dispatcher);
-}
+

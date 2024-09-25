@@ -1,5 +1,9 @@
+#include "arch.h"
+#include "cpu/interrupt.h"
+#include "dev/log.h"
 #include "globals.h"
 #include "proc/process.h"
+#include "proc/spinlock.h"
 #include <mem/mem.h>
 #include <mem/pmm.h>
 #include <mem/gdt.h>
@@ -29,9 +33,10 @@ union descriptor {
 struct tss {
 	uint32_t reserved0;
 	uint64_t rsp[3];
+    uint64_t reserved1;
 	uint64_t ist[7];
-	uint64_t reserved1;
-	uint16_t reserved2;
+	uint64_t reserved2;
+	uint16_t reserved3;
 	uint16_t iopb;
 } __attribute__((packed));
 
@@ -43,6 +48,15 @@ struct extended_descriptor {
 
 union  descriptor gdt[MAX_CORES][7]      = {0};
 struct gdtptr     gdt_pointer[MAX_CORES] = {0};
+static uint8_t    double_fault_stack[KERNEL_STACK_SIZE] __attribute__((aligned(16))) = {0};
+
+extern lock __log_global_lock;
+static void __df_handler(regs* r) {
+    arch_prepare_panic();
+    UNLOCK(__log_global_lock);
+    k_crit("Double fault.");
+    hcf();
+}
 
 union descriptor __encode_descriptor(uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
 	union descriptor result;
@@ -72,8 +86,8 @@ extern void load_descriptor_table(struct gdtptr* ptr);
 extern void reload_segments();
 
 static void __init_descriptors() {
-	gdt_pointer[0].size = sizeof(gdt) - 1;
-	gdt_pointer[0].addr = (uint64_t) &gdt;
+	gdt_pointer[0].size = sizeof(gdt[0]) - 1;
+	gdt_pointer[0].addr = (uint64_t) &gdt[0];
 	
 	gdt[0][0] = __encode_descriptor(0, 0, 0, 0); // NULL 0x0
 	gdt[0][1] = __encode_descriptor(0, 0xFFFFF, ACC_RW   | 
@@ -106,7 +120,10 @@ static void __init_descriptors() {
 	ext->high   = ((uintptr_t) &tss[0]) >> 32;
 	ext->reserved = 0;
 
-    tss[0].iopb = sizeof(tss);
+    tss[0].iopb   = sizeof(tss[0]);
+    tss[0].ist[0] = (uintptr_t) &double_fault_stack[KERNEL_STACK_SIZE - 1];
+
+    k_debug("DF stack: %#.16lx", tss[0].ist[0]);
 
 	k_mem_set_kernel_stack(__k_initial_stack);
     k_mem_flush_gdt(0);
@@ -133,5 +150,6 @@ void k_mem_set_kernel_stack(uintptr_t stack) {
 
 int k_mem_gdt_init() {
 	__init_descriptors();
+    k_cpu_int_setup_isr_handler(8, __df_handler);
 	return 0;
 }

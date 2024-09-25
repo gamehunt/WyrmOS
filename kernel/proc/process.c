@@ -12,18 +12,29 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define KERNEL_STACK_SIZE PAGE_SIZE
-
-static tree* __process_tree;
-static list* __process_list;
-static list* __ready_queue;
+static tree* __process_tree = NULL;
+static list* __process_list = NULL;
+static list* __ready_queue  = NULL;
 
 struct core cores[MAX_CORES] = {0};
 int core_count = 0;
 
 static lock __process_queue_lock = EMPTY_LOCK;
 static lock __process_list_lock = EMPTY_LOCK;
+static lock __dump_lock = EMPTY_LOCK;
 
+static void __dump_process(volatile context* ctx) {
+    LOCK(__dump_lock);
+    k_debug("---------------");
+    k_debug("ctx   = %#.16lx", ctx);
+    k_debug("core  = %d", current_core->id);
+    k_debug("pml   = %#.16lx", ctx->pml);
+    k_debug("stack = %#.16lx", ctx->kernel_stack);
+    k_debug("rbp   = %#.16lx", ctx->rbp);
+    k_debug("rsp   = %#.16lx", ctx->rsp);
+    k_debug("rip   = %#.16lx", ctx->rip);
+    UNLOCK(__dump_lock);
+}
 
 static void __k_proc_load_context(volatile context* ctx) {
 	k_mem_paging_set_pml(ctx->pml);
@@ -50,22 +61,33 @@ process* k_process_get_ready() {
 
 void k_process_make_ready(process* p) {
     LOCK(__process_queue_lock);
-    list_prepend(__ready_queue, p->ready_node);
+    if(p->ready_node != NULL) {
+        list_prepend(__ready_queue, p->ready_node);
+    } else {
+        p->ready_node = list_push_front(__ready_queue, p);
+    }
     UNLOCK(__process_queue_lock);
 }
 
-// FIXME crashes with -O2
-void __attribute__((optimize("O1")))  k_process_yield() {
-	volatile process* old = current_core->current_process;
-    process* new = k_process_get_ready();
-	current_core->current_process = new;	
-	if(old != current_core->idle_process) {
-        k_process_make_ready((process*) old); 
-		if(arch_save_ctx(&old->ctx)) {
-			return; // Return from switch
-		}
-	}
+void k_process_schedule_next() {
+    current_core->current_process = k_process_get_ready();
 	__k_proc_load_context(&current_core->current_process->ctx);
+}
+
+void k_process_yield() {
+	if(current_core->current_process == current_core->idle_process) {
+        k_warn("Preempted from idle process. Probably not a good thing.");
+        goto next;
+	}
+
+	if(arch_save_ctx(&current_core->current_process->ctx)) {
+		return; // Return from switch
+	}
+
+    k_process_make_ready((process*) current_core->current_process); 
+
+next:
+    k_process_schedule_next();
 }
 
 static void* __k_process_alloc_kernel_stack() {
@@ -76,19 +98,22 @@ static void* __k_process_alloc_kernel_stack() {
 
 static process* __k_process_create_init() {
 	process* prc = k_process_create("[init]");
-	prc->ctx.pml = k_mem_paging_clone_pml(NULL);
-    k_mem_paging_set_pml(prc->ctx.pml);
+	prc->ctx.pml = k_mem_paging_get_root_pml();
 	return prc;
 }
 
 static void __k_process_idle_routine(void) {
 	while(1) {
-        arch_pause();
-        k_process_yield();
+        asm volatile(
+             "sti\n"
+             "hlt\n"
+             "cli\n"
+        );
+        k_process_schedule_next();
 	}
 }
 
-static process* __k_process_create_idle() {
+process* k_process_create_idle() {
 	process* prc = k_process_create("[idle]");
 
 	prc->pid     = -1;
@@ -121,10 +146,6 @@ void k_process_spawn(process* p, process* parent) {
 	p->pid       = __process_list->size;
 
     UNLOCK(__process_list_lock);
-
-    LOCK(__process_queue_lock);
-	p->ready_node = list_push_back(__ready_queue, p);
-    UNLOCK(__process_queue_lock);
 }
 
 void k_process_init() {
@@ -134,19 +155,12 @@ void k_process_init() {
 	process* init = __k_process_create_init();
 	k_process_spawn(init, NULL);
 
-	current_core->idle_process = __k_process_create_idle();
+	current_core->idle_process = k_process_create_idle();
 
 	__process_tree  = init->tree_node;
 	current_core->current_process = init;
 
     k_proc_init_cores();
-}
-
-void k_process_init_core() {
-	current_core->idle_process    = __k_process_create_idle();
-	current_core->current_process = current_core->idle_process;
-    k_debug("core %d: ready", current_core->id);
-    k_process_yield();
 }
 
 void k_process_set_core(struct core* c) {
