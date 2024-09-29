@@ -30,6 +30,7 @@ extern void arch_set_core_base(struct core* addr);
 
 extern void      arch_user_jmp(uintptr_t entry, uintptr_t stack);
 extern uintptr_t arch_get_stack();
+extern void      arch_fork_ret();
 
 #ifdef __X86_64__
 extern void k_mem_set_kernel_stack(uintptr_t stack);

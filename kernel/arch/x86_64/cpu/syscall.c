@@ -1,8 +1,11 @@
 #include "cpu/syscall.h"
+#include "arch.h"
 #include "cpu/_syscall.h"
 #include "cpu/interrupt.h"
+#include "proc/process.h"
 
 void __syscall_dispatcher(regs* r) {
+    current_core->current_process->syscall_state = r;
 	r->rax = k_invoke_syscall(r->rax, r->rdi, r->rsi, r->rdx, r->rcx, r->r8, r->r9);
 }
 

@@ -13,6 +13,7 @@ srcs = [
 user_srcs = [
   'unistd.c',
   'stdio/stdio.c',
+  'wyrm/syscall.asm'
 ]
 
 libk = static_library('k', 
@@ -38,9 +39,10 @@ crt0 = custom_target('crt0',
 
 libc = static_library('c', 
   sources: [srcs, user_srcs],
-  include_directories: [includes],
+  include_directories: [includes, kernel_includes],
   c_args: [
     c_args_freestanding,
+    '-D__LIBC'
   ],
   install: true,
   install_dir: 'lib'

@@ -7,7 +7,7 @@
 CHEADER_START
 
 pid_t getpid();
-pid_t fork();
+int fork();
 int execv(const char*, char* const[]);
 int execve(const char*, char* const[], char* const[]);
 int execvp(const char*, char* const[]);

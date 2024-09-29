@@ -1,11 +1,13 @@
+#include <cpu/syscall.h>
+#include "wyrm/syscall.h"
 #include <unistd.h>
 
 pid_t getpid() {
     return 0;
 }
 
-pid_t fork() {
-    return 0;
+int fork() {
+    return __sys_fork();
 }
 
 int execv(const char* path, char* const argv[]) {

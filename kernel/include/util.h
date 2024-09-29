@@ -14,6 +14,11 @@
 	((value) + (-(value) & ((alignment) - 1)))
 #define PAGES(size) \
     (ALIGN((size), PAGE_SIZE) / PAGE_SIZE)
+#define PUSH(rsp, type, value) \
+    rsp -= sizeof(type); \
+    *((volatile type*) (rsp)) = (value);
+#define POP(rsp, type) \
+    *((volatile type*) rsp); rsp += sizeof(type);
 
 
 #endif

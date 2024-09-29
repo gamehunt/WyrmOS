@@ -2,6 +2,7 @@
 #include <cpu/interrupt.h>
 #include "cpu/_syscall.h"
 #include "cpu/pic.h"
+#include "dev/log.h"
 #include "panic.h"
 
 #define MAX_INTERRUPT 256

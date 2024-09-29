@@ -8,5 +8,6 @@ executable('init',
     c_args_user,
   ],
   install: true,
-  install_dir: 'initrd/bin'
+  install_dir: 'initrd/bin',
+  dependencies: [libc_dep]
 )

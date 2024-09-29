@@ -12,6 +12,7 @@ typedef struct {
 	pid_t   pid;
 	char    name[PROCESS_NAME_LENGTH];
 	context ctx;
+    regs*   syscall_state;
 	tree*      tree_node;
 	list_node* list_node;
 	list_node* ready_node;
@@ -38,6 +39,7 @@ process* k_process_get_ready();
 void     k_process_make_ready(process* p);
 process* k_process_create(const char* name);
 void     k_process_spawn(process* p, process* parent);
+pid_t    k_process_fork();
 void     k_process_yield();
 void     k_process_schedule_next();
 void     k_process_set_core(struct core* addr);

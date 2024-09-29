@@ -1,5 +1,6 @@
 #include <proc/process.h>
 
+#include "arch.h"
 #include "dev/log.h"
 #include "mem/alloc.h"
 #include "mem/mem.h"
@@ -23,6 +24,8 @@ static lock __process_queue_lock = EMPTY_LOCK;
 static lock __process_list_lock = EMPTY_LOCK;
 static lock __dump_lock = EMPTY_LOCK;
 
+static _Atomic pid_t __pid = 0;
+
 static void __dump_process(volatile context* ctx) {
     LOCK(__dump_lock);
     k_debug("---------------");
@@ -44,6 +47,10 @@ static void __k_proc_load_context(volatile context* ctx) {
 
 	arch_load_ctx(ctx);
 	__builtin_unreachable();
+}
+
+static pid_t __get_pid() {
+    return ++__pid;
 }
 
 process* k_process_get_ready() {
@@ -143,9 +150,33 @@ void k_process_spawn(process* p, process* parent) {
 	}
 
 	p->list_node = list_push_back(__process_list, p);
-	p->pid       = __process_list->size;
+	p->pid       = __get_pid();
+
+    k_debug("%s (%d) spawned", p->name, p->pid);
 
     UNLOCK(__process_list_lock);
+}
+
+pid_t k_process_fork() {
+    process* cur   = (process*) current_core->current_process;
+    process* fork  = k_process_create(cur->name);
+
+    fork->ctx.pml  = k_mem_paging_clone_pml(cur->ctx.pml);
+    fork->ctx.rsp  = (uintptr_t) fork->ctx.kernel_stack;
+    fork->ctx.rbp  = (uintptr_t) fork->ctx.kernel_stack;
+    fork->ctx.rip  = (uintptr_t) &arch_fork_ret;
+
+    regs r;
+    memcpy(&r, cur->syscall_state, sizeof(regs));
+    r.rax = 0;
+    PUSH(fork->ctx.rsp, regs, r)
+
+    fork->syscall_state = (void*) fork->ctx.rsp;
+
+    k_process_spawn(fork, cur);
+    k_process_make_ready(fork);
+
+    return fork->pid;
 }
 
 void k_process_init() {

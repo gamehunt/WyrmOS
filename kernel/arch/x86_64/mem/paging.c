@@ -159,7 +159,45 @@ volatile union page* k_mem_paging_clone_pml(volatile union page* pml) {
 	if(!pml) {
 		pml = __root_pml;
 	}
-	memcpy((void*) copy, (const void*) pml, PAGE_SIZE);
+    for(uint16_t _pml = 0; _pml < 512; _pml++) {
+        copy[_pml] = pml[_pml];
+        if(!pml[_pml].bits.present || !pml[_pml].bits.user) {
+            continue;
+        } else {
+            copy[_pml].bits.page = FRAME(k_mem_pmm_alloc(1));
+        }
+        volatile union page* __pml      = (volatile union page*) TO_VIRTUAL(ADDR(pml[_pml].bits.page));
+        volatile union page* __pml_copy = (volatile union page*) TO_VIRTUAL(ADDR(copy[_pml].bits.page));
+        for(uint16_t pd = 0; pd < 512; pd++) {
+            __pml_copy[pd] = __pml[pd];
+            if(!__pml[pd].bits.present || !__pml[pd].bits.user) {
+                continue;
+            } else {
+                __pml_copy[pd].bits.page = FRAME(k_mem_pmm_alloc(1));
+            }
+            volatile union page* __pd = (volatile union page*) TO_VIRTUAL(ADDR(__pml[pd].bits.page));
+            volatile union page* __pd_copy = (volatile union page*) TO_VIRTUAL(ADDR(__pml_copy[pd].bits.page));
+            for(uint16_t pt = 0; pt < 512; pt++) {
+                __pd_copy[pt] = __pd[pt];
+                if(!__pd[pt].bits.present || !__pd[pt].bits.user) {
+                    continue;
+                } else {
+                    __pd_copy[pt].bits.page = FRAME(k_mem_pmm_alloc(1));
+                }
+                volatile union page* __pt = (volatile union page*) TO_VIRTUAL(ADDR(__pd[pt].bits.page));
+                volatile union page* __pt_copy = (volatile union page*) TO_VIRTUAL(ADDR(__pd_copy[pt].bits.page));
+                for(uint16_t page = 0; page < 512; page++) {
+                    __pt_copy[page] = __pt[page];
+                    if(!__pt[page].bits.present || !__pt[page].bits.user) {
+                        continue;
+                    } else {
+                        __pt_copy[page].bits.page = FRAME(k_mem_pmm_alloc(1));
+                        memcpy((void*) TO_VIRTUAL(ADDR(__pt_copy[page].bits.page)), (void*) TO_VIRTUAL(ADDR(__pt[page].bits.page)), PAGE_SIZE);
+                    }
+                }
+            }
+        }
+    }
 	return copy;
 }
 
