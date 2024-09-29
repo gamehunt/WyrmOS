@@ -46,15 +46,28 @@ void abort(void) {
 }
 
 #ifndef __LIBK
+#define ATEXIT_MAX 32
+
+static int __atexit_registered = 0;
+static void(*__atexit_handlers)(void)[ATEXIT_MAX] = {0};
+
 int atexit(void (*c)(void)) {
+    if(__atexit_registered >= ATEXIT_MAX) {
+        return 1;
+    }
+    __atexit_handlers[__atexit_registered] = c;
+    __atexit_registered++;
     return 0;
+}
+
+void __attribute__((noreturn)) exit(int exit_code) {
+    for(int i = 0; i < __atexit_registered; i++) {
+        __atexit_handlers[i]();
+    }
+    __sys_exit(code);
 }
 
 char* getenv(const char* env) {
     return "";
-}
-
-void __attribute__((noreturn)) exit(int exit_code) {
-    while(1);
 }
 #endif

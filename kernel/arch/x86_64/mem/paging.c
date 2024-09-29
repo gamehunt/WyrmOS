@@ -31,7 +31,10 @@ extern union page* __get_pml(uint64_t map);
 extern addr __get_pagefault_address();
 
 static void __handle_pagefault(regs* r) {
-	panic(r, "Page fault at %#.16lx.", __get_pagefault_address());
+    if(!current_core->current_process || r->cs == 0x08) {
+	    panic(r, "Page fault at %#.16lx.", __get_pagefault_address());
+    }
+    k_process_exit(-1);
 }
 
 int k_mem_paging_init() {
@@ -214,6 +217,49 @@ void k_mem_paging_set_pml(volatile union page* pml) {
         assert((phys | HIGH_MAP) == (uintptr_t) pml);
     }
 	__set_pml(phys);
+}
+
+void k_mem_paging_free_pml(volatile union page* pml) {
+    for(uint16_t _pml = 0; _pml < 512; _pml++) {
+        if(!pml[_pml].bits.present || !pml[_pml].bits.user) {
+            continue;
+        }
+        volatile union page* __pml = (volatile union page*) TO_VIRTUAL(ADDR(pml[_pml].bits.page));
+        for(uint16_t pd = 0; pd < 512; pd++) {
+            if(!__pml[pd].bits.present || !__pml[pd].bits.user) {
+                continue;
+            }  
+            volatile union page* __pd = (volatile union page*) TO_VIRTUAL(ADDR(__pml[pd].bits.page));
+            for(uint16_t pt = 0; pt < 512; pt++) {
+                if(!__pd[pt].bits.present || !__pd[pt].bits.user) {
+                    continue;
+                }
+                volatile union page* __pt = (volatile union page*) TO_VIRTUAL(ADDR(__pd[pt].bits.page));
+                for(uint16_t page = 0; page < 512; page++) {
+                    if(!__pt[page].bits.present || !__pt[page].bits.user) {
+                        continue;
+                    } else {
+                        k_mem_pmm_mark_frame(__pt[page].bits.page);
+                    }
+                }
+                k_mem_pmm_mark_frame(__pd[pt].bits.page);
+            }
+            k_mem_pmm_mark_frame(__pml[pd].bits.page);
+        }
+        k_mem_pmm_mark_frame(pml[_pml].bits.page);
+    }
+}
+int k_mem_validate_pointer(void* ptr, size_t size) {
+    uintptr_t start = (uintptr_t) ptr;
+    uintptr_t end   = size ? (start + size) : start;
+
+    for(uintptr_t addr = ADDR(FRAME(start)); addr <= ADDR(FRAME(end)); addr += PAGE_SIZE) {
+        if(!k_mem_paging_get_physical(addr)) {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 EXPORT(k_mem_paging_map_ex)

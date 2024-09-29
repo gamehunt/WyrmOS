@@ -41,6 +41,7 @@ int k_mem_paging_init();
 volatile union page* k_mem_paging_get_current_pml();
 volatile union page* k_mem_paging_get_root_pml();
 volatile union page* k_mem_paging_clone_pml(volatile union page* pml);
+void k_mem_paging_free_pml(volatile union page* pml);
 void k_mem_paging_set_pml(volatile union page* pml);
 
 uintptr_t k_mem_paging_get_physical(addr vaddr);
@@ -51,5 +52,7 @@ void k_mem_paging_map_region_ex(addr vaddr_start, addr vaddr_end, addr paddr, ui
 #define k_mem_paging_map_pages(vaddr, pages, paddr) k_mem_paging_map_pages_ex((vaddr), (pages), (paddr), 0)
 #define k_mem_paging_map_region(vaddr_start, vaddr_end, paddr) k_mem_paging_map_region_ex((vaddr_start), (vaddr_end), (paddr), 0)
 void k_mem_paging_unmap(addr vaddr);
+int  k_mem_validate_pointer(void* ptr, size_t size);
+#define validate_ptr(ptr, size) k_mem_validate_pointer(ptr, size)
 
 #endif

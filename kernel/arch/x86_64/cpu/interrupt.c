@@ -4,6 +4,7 @@
 #include "cpu/pic.h"
 #include "dev/log.h"
 #include "panic.h"
+#include "proc/process.h"
 
 #define MAX_INTERRUPT 256
 
@@ -113,7 +114,10 @@ void __dispatch_interrupt(regs* r) {
 			IRQ_ACK(INT_TO_IRQ(r->int_no));
 			return;
 		}
-		panic(r, "Unhandled interrupt: %s (%d)", isr_desc(r->int_no), r->int_no);
+
+        if(!current_core->current_process || r->cs == 0x08) {
+		    panic(r, "Unhandled interrupt: %s (%d)", isr_desc(r->int_no), r->int_no);
+        }
 	}
 	handlers[r->int_no](r);
 }

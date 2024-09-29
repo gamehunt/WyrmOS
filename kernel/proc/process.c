@@ -62,6 +62,7 @@ process* k_process_get_ready() {
     } else {
         proc = node->value;
     }
+    proc->flags |= PROCESS_RUNNING;
     UNLOCK(__process_queue_lock);
     return proc;
 }
@@ -77,7 +78,11 @@ void k_process_make_ready(process* p) {
 }
 
 void k_process_schedule_next() {
-    current_core->current_process = k_process_get_ready();
+    process* prc = NULL;
+    do {
+        prc = k_process_get_ready();
+    } while(prc->flags & PROCESS_FINISHED);
+    current_core->current_process = prc;
 	__k_proc_load_context(&current_core->current_process->ctx);
 }
 
@@ -86,6 +91,10 @@ void k_process_yield() {
         k_warn("Preempted from idle process. Probably not a good thing.");
         goto next;
 	}
+
+    if(current_core->current_process->flags & PROCESS_FINISHED) {
+        goto next;
+    }
 
 	if(arch_save_ctx(&current_core->current_process->ctx)) {
 		return; // Return from switch
@@ -105,6 +114,7 @@ static void* __k_process_alloc_kernel_stack() {
 
 static process* __k_process_create_init() {
 	process* prc = k_process_create("[init]");
+    prc->flags   = PROCESS_RUNNING;
 	prc->ctx.pml = k_mem_paging_get_root_pml();
 	return prc;
 }
@@ -123,6 +133,8 @@ static void __k_process_idle_routine(void) {
 process* k_process_create_idle() {
 	process* prc = k_process_create("[idle]");
 
+    prc->flags   = PROCESS_RUNNING;
+
 	prc->pid     = -1;
 	prc->ctx.rip = (uintptr_t) &__k_process_idle_routine;
 	prc->ctx.rsp = (uintptr_t) prc->ctx.kernel_stack;
@@ -137,6 +149,7 @@ process* k_process_create(const char* name) {
 	memset(p, 0, sizeof(process));
 	strncpy(p->name, name, PROCESS_NAME_LENGTH);
 	p->ctx.kernel_stack = __k_process_alloc_kernel_stack();
+    p->fds = list_create();
 	return p;
 }
 
@@ -196,6 +209,49 @@ void k_process_init() {
 
 void k_process_set_core(struct core* c) {
     arch_set_core_base(c);
+}
+
+void k_process_exit(int code) {
+    current_core->current_process->flags  = PROCESS_FINISHED;
+    current_core->current_process->status = code;
+    k_process_schedule_next();
+}
+
+int k_process_open_file(fs_node* node) {
+    for(size_t i = 0; i < current_core->current_process->fds->size; i++) {
+        list_node* free_fd = list_get(current_core->current_process->fds, i);
+        if(!free_fd->value) {
+            free_fd->value = node;
+            return i;
+        }
+    }
+    int s = current_core->current_process->fds->size;
+    list_push_back(current_core->current_process->fds, node);
+    return s;
+}
+
+int k_process_close_file(unsigned int fd) {
+    if(current_core->current_process->fds->size <= fd) {
+        return -1;
+    } 
+    list_node* _fd = list_get(current_core->current_process->fds, fd);
+    if(!_fd || !_fd->value) {
+        return -1;
+    }
+    k_fs_close(_fd->value);
+    _fd->value = NULL;
+    return 0;
+}
+
+fs_node* k_process_get_file(unsigned int fd) {
+    if(current_core->current_process->fds->size <= fd) {
+        return NULL;
+    } 
+    list_node* _fd = list_get(current_core->current_process->fds, fd);
+    if(!_fd) {
+        return NULL;
+    }
+    return _fd->value;
 }
 
 EXPORT(k_process_init)
