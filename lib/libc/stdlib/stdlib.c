@@ -46,10 +46,11 @@ void abort(void) {
 }
 
 #ifndef __LIBK
+#include<wyrm/syscall.h>
 #define ATEXIT_MAX 32
 
 static int __atexit_registered = 0;
-static void(*__atexit_handlers)(void)[ATEXIT_MAX] = {0};
+static void(*__atexit_handlers[ATEXIT_MAX])(void) = {0};
 
 int atexit(void (*c)(void)) {
     if(__atexit_registered >= ATEXIT_MAX) {
@@ -60,7 +61,7 @@ int atexit(void (*c)(void)) {
     return 0;
 }
 
-void __attribute__((noreturn)) exit(int exit_code) {
+void __attribute__((noreturn)) exit(int code) {
     for(int i = 0; i < __atexit_registered; i++) {
         __atexit_handlers[i]();
     }

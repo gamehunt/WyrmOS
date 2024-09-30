@@ -8,7 +8,6 @@ srcs = [
   'dev/acpi.c',
   'dev/null.c',
   'dev/random.c',
-  'dev/terminal.c',
   'globals.c',
   'kernel.c',
   'panic.c',

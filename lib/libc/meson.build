@@ -24,7 +24,8 @@ libk = static_library('k',
     '-D__LIBK'
   ],
   install: true,
-  install_dir: 'lib'
+  install_dir: 'lib',
+  install_tag: 'libc',
 )
 
 nasm = find_program('nasm')
@@ -45,6 +46,7 @@ libc = static_library('c',
     '-D__LIBC'
   ],
   install: true,
+  install_tag: 'libc',
   install_dir: 'lib'
 )
 

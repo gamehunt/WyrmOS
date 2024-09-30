@@ -1,6 +1,7 @@
 #ifndef __LIBC_WYRM_SYSCALL_H
 #define __LIBC_WYRM_SYSCALL_H 1
 
+#include <cpu/syscall.h>
 #include <stdint.h>
 
 extern int __invoke_syscall(uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, uintptr_t e, uintptr_t f, int number);
