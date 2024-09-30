@@ -254,6 +254,27 @@ fs_node* k_process_get_file(unsigned int fd) {
     return _fd->value;
 }
 
+static int __pid_comparator(process* a, pid_t p) {
+	return a->pid == p;
+}
+
+process* k_process_get_by_pid(pid_t pid) {
+	list_node* prc = list_find_cmp(__process_list, (void*) pid, (comparator) __pid_comparator);
+	if(prc) {
+		return prc->value;
+	} else {
+		return NULL;
+	}
+}
+
+int k_process_send_signal(pid_t pid, int sig) {
+	process* target = k_process_get_by_pid(pid);
+	if(!target) {
+		return -1;
+	}
+
+}
+
 EXPORT(k_process_init)
 EXPORT(k_process_spawn)
 EXPORT(k_process_yield)
