@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 pid_t getpid() {
-    return 0;
+    return __sys_getpid();
 }
 
 int fork() {

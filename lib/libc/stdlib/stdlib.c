@@ -42,6 +42,9 @@ void abort(void) {
 #ifdef __LIBK
 #include "panic.h"
 	panic(NULL, "abort() called.");
+#else
+#include "signal.h"
+    raise(SIGABRT); 
 #endif
 }
 

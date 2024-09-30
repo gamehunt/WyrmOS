@@ -13,7 +13,8 @@ srcs = [
 user_srcs = [
   'unistd.c',
   'stdio/stdio.c',
-  'wyrm/syscall.asm'
+  'wyrm/syscall.asm',
+  'signal.c'
 ]
 
 libk = static_library('k', 

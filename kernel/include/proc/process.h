@@ -20,7 +20,7 @@ typedef struct {
 } fd;
 
 typedef struct {
-
+    uintptr_t handler;
 } signal;
 
 typedef struct {
@@ -29,11 +29,10 @@ typedef struct {
     _Atomic uint16_t flags;
     int        status;
 	context    ctx;
-	signal     signals[SIGNUM + 1];
+	signal     signals[NSIG + 1];
 	sigset_t   pending_signals;
 	sigset_t   blocked_signals;
 	sigset_t   awaiting_signals;
-	regs*      signal_state;
     regs*      syscall_state;
     list*      fds;
 	tree*      tree_node;
@@ -41,10 +40,10 @@ typedef struct {
 	list_node* ready_node;
 } process;
 
-#define pending_signals(prc) prc->pending_signals
-#define current_pending() pending_signals(current_core->current_process)
-#define set_sig_pending(n) prc->pending_signals |= (1 << n)
-#define clear_sig_pending(n) prc->pending_signals &= ~(1 << n)
+#define pending(prc) prc->pending_signals
+#define current_pending() pending(current_core->current_process)
+#define set_sig_pending(prc, n) prc->pending_signals |= (1ULL << n)
+#define clear_sig_pending(prc, n) prc->pending_signals &= ~(1ULL << n)
 
 typedef int(*tasklet)(void);
 
@@ -77,5 +76,8 @@ int      k_process_open_file(fs_node* node);
 int      k_process_close_file(unsigned int fd);
 fs_node* k_process_get_file(unsigned int fd);
 int      k_process_send_signal(pid_t pid, int sig);
+int      k_process_handle_signal(int sig, regs* r);
+void     k_process_exit_signal(regs* r);
+void     k_process_invoke_signals(regs* r);
 
 #endif

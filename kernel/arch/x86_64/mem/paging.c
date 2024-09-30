@@ -1,4 +1,5 @@
 #include <mem/paging.h>
+#include "arch.h"
 #include "dev/log.h"
 #include "mem/alloc.h"
 #include "mem/mem.h"
@@ -34,7 +35,12 @@ static void __handle_pagefault(regs* r) {
     if(!current_core->current_process || r->cs == 0x08) {
 	    panic(r, "Page fault at %#.16lx.", __get_pagefault_address());
     }
-    k_process_exit(-1);
+
+    if(__get_pagefault_address() == SIG_RET_MAGIC) {
+        k_process_exit_signal(r);
+    } else {
+        k_process_send_signal(current_core->current_process->pid, SIGSEGV);
+    }
 }
 
 int k_mem_paging_init() {

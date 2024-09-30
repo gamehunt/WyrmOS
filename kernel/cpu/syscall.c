@@ -41,13 +41,36 @@ static int sys_exit(int code) {
     return -1;
 }
 
+static int sys_kill(pid_t pid, int sig) {
+    return k_process_send_signal(pid, sig);
+}
+
+static int sys_getpid() {
+    return current_core->current_process->pid;
+}
+
+static int sys_signal(int sig, uintptr_t handler, uintptr_t* old) {
+    if(sig < 0 || sig > NSIG) {
+        return -1;
+    }
+    if(!validate_ptr(old, sizeof(old))) {
+        return -1;
+    }
+    *old = current_core->current_process->signals[sig].handler;
+    current_core->current_process->signals[sig].handler = handler;
+    return 0;
+}
+
 typedef int (*syscall_handler)(uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, uintptr_t e, uintptr_t f);
 static const syscall_handler __syscall_table[] = {
-    [SYS_OPEN]  = (syscall_handler) sys_open,
-    [SYS_READ]  = (syscall_handler) sys_read,
-    [SYS_WRITE] = (syscall_handler) sys_write,
-    [SYS_FORK]  = (syscall_handler) sys_fork,
-    [SYS_EXIT]  = (syscall_handler) sys_exit,
+    [SYS_OPEN]   = (syscall_handler) sys_open,
+    [SYS_READ]   = (syscall_handler) sys_read,
+    [SYS_WRITE]  = (syscall_handler) sys_write,
+    [SYS_FORK]   = (syscall_handler) sys_fork,
+    [SYS_EXIT]   = (syscall_handler) sys_exit,
+    [SYS_GETPID] = (syscall_handler) sys_getpid,
+    [SYS_KILL]   = (syscall_handler) sys_kill,
+    [SYS_SIGNAL] = (syscall_handler) sys_signal,
 };
 
 static const size_t __syscall_amount = sizeof(__syscall_table) / sizeof(syscall_handler);

@@ -10,6 +10,7 @@
 #include "types/list.h"
 #include "types/tree.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -21,10 +22,20 @@ struct core cores[MAX_CORES] = {0};
 int core_count = 0;
 
 static lock __process_queue_lock = EMPTY_LOCK;
-static lock __process_list_lock = EMPTY_LOCK;
-static lock __dump_lock = EMPTY_LOCK;
+static lock __process_list_lock  = EMPTY_LOCK;
+static lock __dump_lock          = EMPTY_LOCK;
+static lock __sig_lock           = EMPTY_LOCK;
 
 static _Atomic pid_t __pid = 0;
+
+#define SIG_ACT_IGNORE    0
+#define SIG_ACT_TERMINATE 1
+static const uint8_t __signal_defaults[] = {
+    [SIGKILL] = SIG_ACT_TERMINATE, 
+    [SIGABRT] = SIG_ACT_TERMINATE, 
+    [SIGTERM] = SIG_ACT_TERMINATE,
+    [SIGSEGV] = SIG_ACT_TERMINATE
+};
 
 static void __dump_process(volatile context* ctx) {
     LOCK(__dump_lock);
@@ -55,13 +66,16 @@ static pid_t __get_pid() {
 
 process* k_process_get_ready() {
     LOCK(__process_queue_lock);
-    list_node* node = list_pop_back(__ready_queue);
     process* proc = NULL; 
-    if(!node) {
-        proc = (process*) current_core->idle_process;
-    } else {
-        proc = node->value;
-    }
+    do {
+        list_node* node = list_pop_back(__ready_queue);
+        if(!node) {
+            proc = (process*) current_core->idle_process;
+        } else {
+            proc = node->value;
+        }
+    } while(proc->flags & PROCESS_FINISHED);
+    assert((proc->flags & PROCESS_FINISHED) == 0);
     proc->flags |= PROCESS_RUNNING;
     UNLOCK(__process_queue_lock);
     return proc;
@@ -78,10 +92,7 @@ void k_process_make_ready(process* p) {
 }
 
 void k_process_schedule_next() {
-    process* prc = NULL;
-    do {
-        prc = k_process_get_ready();
-    } while(prc->flags & PROCESS_FINISHED);
+    process* prc = k_process_get_ready();
     current_core->current_process = prc;
 	__k_proc_load_context(&current_core->current_process->ctx);
 }
@@ -174,6 +185,8 @@ pid_t k_process_fork() {
     process* cur   = (process*) current_core->current_process;
     process* fork  = k_process_create(cur->name);
 
+    memcpy(fork->signals, cur->signals, sizeof(cur->signals));
+
     fork->ctx.pml  = k_mem_paging_clone_pml(cur->ctx.pml);
     fork->ctx.rsp  = (uintptr_t) fork->ctx.kernel_stack;
     fork->ctx.rbp  = (uintptr_t) fork->ctx.kernel_stack;
@@ -212,6 +225,10 @@ void k_process_set_core(struct core* c) {
 }
 
 void k_process_exit(int code) {
+    k_debug("%s (%d) exited with code %d", 
+            current_core->current_process->name, 
+            current_core->current_process->pid,
+            code);
     current_core->current_process->flags  = PROCESS_FINISHED;
     current_core->current_process->status = code;
     k_process_schedule_next();
@@ -255,11 +272,13 @@ fs_node* k_process_get_file(unsigned int fd) {
 }
 
 static int __pid_comparator(process* a, pid_t p) {
-	return a->pid == p;
+	return a->pid != p;
 }
 
 process* k_process_get_by_pid(pid_t pid) {
+    LOCK(__process_list_lock);
 	list_node* prc = list_find_cmp(__process_list, (void*) pid, (comparator) __pid_comparator);
+    UNLOCK(__process_list_lock);
 	if(prc) {
 		return prc->value;
 	} else {
@@ -273,6 +292,73 @@ int k_process_send_signal(pid_t pid, int sig) {
 		return -1;
 	}
 
+    if(sig < 0 || sig >= NSIG) {
+        return -1;
+    }
+
+    if(!target->signals[sig].handler && __signal_defaults[sig] == SIG_ACT_IGNORE) {
+        return 0;
+    }
+
+    LOCK(__sig_lock);
+    set_sig_pending(target, sig);
+    UNLOCK(__sig_lock);
+
+    if(target == current_core->current_process) {
+        return 0;
+    }
+    
+    if(target->ready_node->owner == NULL && !(target->flags & PROCESS_RUNNING)) {
+        k_process_make_ready(target);
+    }
+
+    return 0;
+}
+
+int k_process_handle_signal(int sig, regs* r) {
+    volatile process* cur = current_core->current_process;
+    
+    if(cur->flags & PROCESS_FINISHED) {
+        return 1;
+    }
+
+    signal s = cur->signals[sig];
+    if(!s.handler) {
+        switch(__signal_defaults[sig]) {
+            case SIG_ACT_IGNORE:
+                return current_pending() == 0;
+            case SIG_ACT_TERMINATE:
+                k_process_exit((128 + sig) << 8);
+                __builtin_unreachable();
+        }
+    }
+
+    arch_enter_signal(s.handler, sig, r);
+    return 1;
+}
+
+void k_process_exit_signal(regs* r) {
+    arch_exit_signal(r);
+}
+
+void k_process_invoke_signals(regs* r) {
+start:
+    LOCK(__sig_lock);
+    int sigset = current_pending();
+    int signal = 0;
+    while(sigset && signal < NSIG) {
+        if(sigset & 1) {
+            clear_sig_pending(current_core->current_process, signal);
+            UNLOCK(__sig_lock);
+            if(k_process_handle_signal(signal, r)) {
+                return;
+            }
+            goto start;
+        } 
+        sigset >>= 1;
+        signal++;
+    }
+    UNLOCK(__sig_lock);
 }
 
 EXPORT(k_process_init)

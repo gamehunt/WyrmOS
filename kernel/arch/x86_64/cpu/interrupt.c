@@ -109,17 +109,25 @@ void __dispatch_interrupt(regs* r) {
 	if(r->int_no > MAX_INTERRUPT) {
 		panic(r, "Invalid interrupt: %d", r->int_no);
 	}
+
 	if(!handlers[r->int_no]) {
 		if(IS_IRQ(r->int_no)) {
 			IRQ_ACK(INT_TO_IRQ(r->int_no));
 			return;
 		}
-
         if(!current_core->current_process || r->cs == 0x08) {
 		    panic(r, "Unhandled interrupt: %s (%d)", isr_desc(r->int_no), r->int_no);
+        } else {
+            k_debug("Exception: %s", isr_desc(r->int_no));
+            k_process_send_signal(current_core->current_process->pid, SIGSEGV);
         }
-	}
-	handlers[r->int_no](r);
+    } else {
+	    handlers[r->int_no](r);
+    } 
+
+    if(current_core->current_process && r->cs != 0x08) {
+        k_process_invoke_signals(r);
+    }
 }
 
 void k_cpu_int_init() {

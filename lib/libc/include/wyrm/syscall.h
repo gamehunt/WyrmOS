@@ -14,7 +14,10 @@ extern int __invoke_syscall(uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, 
 #define INVOKE_SYSCALL5(n, a, b, c, d, e) __invoke_syscall(a, b, c, d, e, 0, n)
 #define INVOKE_SYSCALL6(n, a, b, c, d, e, f) __invoke_syscall(a, b, c, d, e, f, n)
 
-#define __sys_fork()     INVOKE_SYSCALL0(SYS_FORK)
-#define __sys_exit(code) INVOKE_SYSCALL1(SYS_EXIT, code)
+#define __sys_fork()           INVOKE_SYSCALL0(SYS_FORK)
+#define __sys_exit(code)       INVOKE_SYSCALL1(SYS_EXIT, code)
+#define __sys_getpid()         INVOKE_SYSCALL0(SYS_GETPID)
+#define __sys_kill(pid, s)     INVOKE_SYSCALL2(SYS_KILL, pid, s)
+#define __sys_signal(s, handl, old) INVOKE_SYSCALL3(SYS_SIGNAL, s, (uintptr_t) handl, (uintptr_t) old)
 
 #endif

@@ -29,10 +29,13 @@ struct core;
 extern void arch_set_core_base(struct core* addr);
 
 extern void      arch_user_jmp(uintptr_t entry, uintptr_t stack);
+extern int       arch_enter_signal(uintptr_t entry, int sig, regs* r);
+extern int       arch_exit_signal(regs* r);
 extern uintptr_t arch_get_stack();
 extern void      arch_fork_ret();
 
 #ifdef __X86_64__
+
 extern void k_mem_set_kernel_stack(uintptr_t stack);
 #define arch_set_kernel_stack(stack) k_mem_set_kernel_stack(stack)
 extern uint64_t k_dev_read_tsc();
@@ -40,6 +43,8 @@ extern uint64_t k_dev_read_tsc();
 extern uint64_t k_dev_get_cpu_speed();
 #define arch_get_cpu_speed() k_dev_get_cpu_speed()
 #define arch_pause() __builtin_ia32_pause()
+#define SIG_RET_MAGIC 0x123
+
 #endif
 
 void arch_stacktrace(regs* r);

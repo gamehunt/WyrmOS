@@ -1,6 +1,7 @@
 arch_srcs = [
   'proc/process.asm',
   'proc/smp.c',
+  'proc/signal.c',
   'cpu/interrupt.asm',
   'cpu/interrupt.c',
   'cpu/pic.c',
