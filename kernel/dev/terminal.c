@@ -114,15 +114,16 @@ static void __char(fb_info* info, uint32_t ox, uint32_t oy, uint16_t c) {
     }
 }
 
-static void __scroll(fb_info* info) {
-    memmove(info->addr, info->addr + info->pitch, info->pitch * (info->h - 1));
+static void __scroll(fb_info* info, uint32_t pixels) {
+    memmove(info->addr, info->addr + info->pitch * pixels, info->pitch * (info->h - pixels - 1));
+    memset(info->addr + info->pitch * (info->h - pixels), 0, info->pitch * pixels);
 }
 
 static void __shift_down(fb_info* info) {
     cy++;
-    if(cy * __font->height > info->h) {
-        __scroll(info);
-        cy = info->h / __font->height;
+    if(cy * __font->height >= info->h) {
+        __scroll(info, __font->height);
+        cy = (info->h - __font->height) / __font->height;
     }
 }
 
