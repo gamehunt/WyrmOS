@@ -8,6 +8,7 @@ srcs = [
   'dev/acpi.c',
   'dev/null.c',
   'dev/random.c',
+  'dev/terminal.c',
   'globals.c',
   'kernel.c',
   'panic.c',
@@ -30,9 +31,18 @@ foreach src : arch_srcs
     srcs += '/'.join([arch_folder, src])
 endforeach
 
+
+objcopy = find_program('objcopy')
+font = custom_target(
+  'font.o',
+  output: 'font.o',
+  input: 'font.psf',
+  command: [objcopy, '-O', 'elf64-x86-64', '-B', 'i386', '-I', 'binary' ,'@INPUT@', '@OUTPUT@']
+)
+
 prebuilt_kernel = executable(
   'wyrm.bin.0',
-  sources: srcs,
+  sources: [srcs, font],
   include_directories: [kernel_includes, arch_includes],
   nasm_args: [
     '-f',

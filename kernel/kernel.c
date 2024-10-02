@@ -1,5 +1,6 @@
 #include "dev/pci.h"
 #include "dev/misc.h"
+#include "dev/terminal.h"
 #include "exec/exec.h"
 #include "exec/initrd.h"
 #include "exec/module.h"
@@ -18,12 +19,6 @@
 
 __attribute__((used, section(".requests")))
 static volatile LIMINE_BASE_REVISION(2);
-
-__attribute__((used, section(".requests")))
-static volatile struct limine_framebuffer_request framebuffer_request = {
-    .id = LIMINE_FRAMEBUFFER_REQUEST,
-    .revision = 0
-};
 
 __attribute__((used, section(".requests")))
 static volatile struct limine_paging_mode_request paging_mode_request = {
@@ -60,6 +55,7 @@ void kernel_main(void) {
 
 	k_fs_init();
 	k_dev_log_init();
+    k_dev_terminal_init();
     k_dev_pci_init();
 	k_setup_symbols();
 

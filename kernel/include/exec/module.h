@@ -26,6 +26,23 @@ struct module_info {
 #define DEPENDS_ON(dependencies) \
     const char* __module_info_dependencies[] = {dependencies, "\0"};
 
+#ifdef __MODULE
+#undef k_print   
+#undef k_debug   
+#undef k_verbose
+#undef k_info
+#undef k_warn
+#undef k_error
+#undef k_crit
+#define k_print(...)   k_dev_log(PRINT, __module_info.name, __VA_ARGS__)
+#define k_debug(...)   k_dev_log(DEBUG, __module_info.name, __VA_ARGS__)
+#define k_verbose(...) k_dev_log(VERBOSE, __module_info.name,  __VA_ARGS__)
+#define k_info(...)    k_dev_log(INFO, __module_info.name, __VA_ARGS__)
+#define k_warn(...)    k_dev_log(WARNING, __module_info.name, __VA_ARGS__)
+#define k_error(...)   k_dev_log(ERROR, __module_info.name, __VA_ARGS__)
+#define k_crit(...)    k_dev_log(CRITICAL, __module_info.name, __VA_ARGS__)
+#endif
+
 #include <symbols.h>
 
 INTERNAL int k_load_modules();

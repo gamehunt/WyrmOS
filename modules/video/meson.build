@@ -2,7 +2,7 @@ srcs = [
   'main.c',
 ]
 
-test_mod = executable('testmod', 
+video_mod = executable('video', 
   sources: srcs,
   include_directories: [includes, kernel_includes],
   c_args: [

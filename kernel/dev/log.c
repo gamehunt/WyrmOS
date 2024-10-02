@@ -2,6 +2,7 @@
 #include "fs/fs.h"
 #include "globals.h"
 #include "proc/spinlock.h"
+#include "types/list.h"
 #include <stdarg.h>
 #include <dev/log.h>
 #include <stdio.h>
@@ -22,9 +23,20 @@ const char* __log_prefixes[] = {
 	[CRITICAL] = "[E]! "
 };
 
+list* __listeners = NULL;
+
+void k_dev_log_subscribe(log_listener l) {
+    list_push_back(__listeners, l);
+}
+
 static size_t __k_log_write(fs_node* logdev, size_t offset, size_t size, uint8_t* buffer) {
 	for(size_t i = 0; i < size; i++) {
 		DEBUG_PUTCHAR(buffer[i]);
+        if(__listeners) {
+            foreach(l, __listeners) {
+                ((log_listener)(l->value))(buffer[i]);
+            }
+        }
 	}
 	return size;
 }
@@ -32,11 +44,12 @@ static size_t __k_log_write(fs_node* logdev, size_t offset, size_t size, uint8_t
 void k_dev_log_init() {
 	__k_logdev = k_fs_alloc_fsnode("log");
 	__k_logdev->ops.write = __k_log_write;
+    __listeners = list_create();
 	k_fs_mount_node("/dev/log", __k_logdev);
 	__k_early  = 0;	
 }
 
-void k_dev_log(enum LOG_LEVEL level, const char* format, ...) {
+void k_dev_log(enum LOG_LEVEL level, const char* prefix, const char* format, ...) {
     LOCK(__log_global_lock);
 
 	char buffer1[LOG_BUFFER_SIZE] = {0};
@@ -46,7 +59,13 @@ void k_dev_log(enum LOG_LEVEL level, const char* format, ...) {
 	va_start(args, format);
 
 	vsnprintf(buffer1, LOG_BUFFER_SIZE, format, args);
-	size_t bytes = snprintf(buffer2, LOG_BUFFER_SIZE, "%s%s%s", __log_prefixes[level], buffer1, (level == PRINT ? "" : "\r\n"));
+	size_t bytes = 0;
+
+    if(prefix[0] != '\0') {
+        bytes = snprintf(buffer2, LOG_BUFFER_SIZE, "%s[%s] %s%s", __log_prefixes[level], prefix, buffer1, (level == PRINT ? "" : "\r\n"));
+    } else {
+        bytes = snprintf(buffer2, LOG_BUFFER_SIZE, "%s%s%s", __log_prefixes[level], buffer1, (level == PRINT ? "" : "\r\n"));
+    }
 
 	va_end(args);
 
