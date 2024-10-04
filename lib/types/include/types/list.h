@@ -19,7 +19,8 @@ typedef struct _list {
 	size_t size;
 } list;
 
-list* list_create();
+list*      list_create();
+list_node* list_create_node(void*);
 void  list_free(list*);
 void  list_clear(list*);
 

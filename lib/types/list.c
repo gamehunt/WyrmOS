@@ -35,6 +35,10 @@ static list_node* __list_create_node(void* v) {
 	return node;
 }
 
+list_node* list_create_node(void* v) {
+    return __list_create_node(v);
+}
+
 void list_append(list* l, list_node* n) {
 	assert(l != NULL);
 	n->owner = l;
