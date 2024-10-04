@@ -38,12 +38,14 @@ static list_node* __list_create_node(void* v) {
 void list_append(list* l, list_node* n) {
 	assert(l != NULL);
 	n->owner = l;
+    n->next  = NULL;
 	if(!l->tail) {
+        n->prev = NULL;
 		l->head = n;
 		l->tail = l->head;
 	} else {
-		l->tail->next = n;
 		n->prev = l->tail;
+		l->tail->next = n;
 		l->tail = n;
 	}
 	l->size++;
@@ -56,6 +58,7 @@ void list_prepend(list* l, list_node* n) {
         return;
 	} else {
 		n->owner = l;
+        n->prev = NULL;
 		l->head->prev = n;
 		n->next = l->head;
 		l->head = n;
@@ -88,7 +91,9 @@ list_node* list_pop_back(list* l) {
 	}
 	if(l->tail) {
 		l->tail->next = NULL;
-	}
+    } else {
+        l->head = NULL;
+    }
 	n->next  	  = NULL;
 	n->prev  	  = NULL;
 	n->owner 	  = NULL;
@@ -102,12 +107,16 @@ list_node* list_pop_front(list* l) {
 		return NULL;
 	}
 	list_node* n = l->head;
+	l->head = l->head->next;
+    if(l->head) {
+	    l->head->prev = NULL;
+    } else {
+        l->tail = NULL;
+    }
+    l->size--;
 	n->next  = NULL;
 	n->prev  = NULL;
 	n->owner = NULL;
-	l->head = l->head->next;
-	l->head->prev = NULL;
-    l->size--;
 	return n;
 }
 
@@ -218,4 +227,37 @@ void list_sort_cmp(list* list, comparator cmp) {
         }
         a = a->next;
     }
+}
+
+list_node* list_insert_after(list* l, list_node* p, void* d) {
+    assert(p->owner == l);
+    list_node* r = __list_create_node(d);
+    r->owner = l;
+    r->prev  = p;
+    r->next  = p->next;
+    if(p->next) {
+        p->next->prev = r;
+    } else if(p == l->tail) {
+        l->tail = r;
+    }
+    p->next = r;
+    l->size++;
+    return r;
+}
+
+list_node* list_insert_before(list* l, list_node* p, void* d) {
+    assert(p->owner == l);
+    list_node* r = __list_create_node(d);
+    r->owner = l;
+    r->next  = p;
+    r->prev  = p->prev;
+    if(p->prev) {
+        p->prev->next = r;
+    }
+    else if(p == l->head) {
+        l->head = r;
+    }
+    p->prev = r;
+    l->size++;
+    return r;
 }

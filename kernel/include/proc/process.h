@@ -14,6 +14,8 @@
 #define PROCESS_FINISHED (1 << 1)
 #define PROCESS_SLEEPING (1 << 2)
 
+#define is_ready(p) (p->ready_node != NULL && p->ready_node->owner != NULL)
+
 typedef struct {
     unsigned int id;
     fs_node* node;
@@ -34,10 +36,14 @@ typedef struct {
 	sigset_t   blocked_signals;
 	sigset_t   awaiting_signals;
     regs*      syscall_state;
+    uint64_t   sleep_seconds;
+    uint64_t   sleep_subseconds;
     list*      fds;
 	tree*      tree_node;
 	list_node* list_node;
 	list_node* ready_node;
+    list_node* sleep_node;
+    list_node* block_node;
 } process;
 
 #define pending(prc) prc->pending_signals
@@ -55,6 +61,8 @@ struct core {
 	volatile union page* pml;
 };
 
+#define SWITCH_RESCHEDULE (1 << 0)
+
 extern struct core cores[MAX_CORES];
 extern int core_count;
 static struct core __seg_gs * const current_core = 0;
@@ -68,7 +76,8 @@ process* k_process_create(const char* name);
 process* k_process_get_by_pid(pid_t pid);
 void     k_process_spawn(process* p, process* parent);
 pid_t    k_process_fork();
-void     k_process_yield();
+void     k_process_switch(int flags);
+#define  k_process_yield() k_process_switch(SWITCH_RESCHEDULE);
 void     k_process_schedule_next();
 void     k_process_set_core(struct core* addr);
 void     k_process_exit(int code);
@@ -79,5 +88,7 @@ int      k_process_send_signal(pid_t pid, int sig);
 int      k_process_handle_signal(int sig, regs* r);
 void     k_process_exit_signal(regs* r);
 void     k_process_invoke_signals(regs* r);
+void     k_process_update_timings();
+void     k_process_sleep(uint64_t seconds, uint64_t subseconds);
 
 #endif

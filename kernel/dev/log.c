@@ -49,11 +49,14 @@ void k_dev_log_init() {
 	__k_early  = 0;	
 }
 
+static char buffer1[LOG_BUFFER_SIZE] = {0};
+static char buffer2[LOG_BUFFER_SIZE] = {0};
+
 void k_dev_log(enum LOG_LEVEL level, const char* prefix, const char* format, ...) {
     LOCK(__log_global_lock);
 
-	char buffer1[LOG_BUFFER_SIZE] = {0};
-	char buffer2[LOG_BUFFER_SIZE] = {0};
+    memset(buffer1, 0, LOG_BUFFER_SIZE);
+    memset(buffer2, 0, LOG_BUFFER_SIZE);
 
 	va_list args;
 	va_start(args, format);

@@ -1,3 +1,4 @@
+#include "arch.h"
 #include "dev/log.h"
 #include "fs/fs.h"
 #include "mem/paging.h"
@@ -61,6 +62,26 @@ static int sys_signal(int sig, uintptr_t handler, uintptr_t* old) {
     return 0;
 }
 
+static int sys_sleep(uint64_t seconds, uint64_t subseconds, int relative) {
+    if(relative) {
+        uint64_t ticks = arch_get_ticks() / arch_get_cpu_speed(); 
+
+        uint64_t seconds_base    = ticks / SUBSECONDS_PER_SECOND;
+        uint64_t subseconds_base = ticks % SUBSECONDS_PER_SECOND;
+
+        seconds    += seconds_base;
+        subseconds += subseconds_base;
+    }
+    k_process_sleep(seconds, subseconds);
+    k_process_switch(0);
+    return 0;
+}
+
+static int sys_test() {
+    k_debug("Test");
+    return 0;
+}
+
 typedef int (*syscall_handler)(uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, uintptr_t e, uintptr_t f);
 static const syscall_handler __syscall_table[] = {
     [SYS_OPEN]   = (syscall_handler) sys_open,
@@ -71,6 +92,8 @@ static const syscall_handler __syscall_table[] = {
     [SYS_GETPID] = (syscall_handler) sys_getpid,
     [SYS_KILL]   = (syscall_handler) sys_kill,
     [SYS_SIGNAL] = (syscall_handler) sys_signal,
+    [SYS_SLEEP]  = (syscall_handler) sys_sleep,
+    [__SYS_TEST] = (syscall_handler) sys_test
 };
 
 static const size_t __syscall_amount = sizeof(__syscall_table) / sizeof(syscall_handler);

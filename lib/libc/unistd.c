@@ -21,3 +21,11 @@ int execve(const char* path, char* const argv[], char* const envp[]) {
 int execvp(const char* path, char* const argv[]) {
     return 0;
 }
+
+unsigned int sleep(unsigned int seconds) {
+    return __sys_sleep(seconds, 0, 1);
+}
+
+int usleep(unsigned long usec) {
+    return __sys_sleep(usec / 1000000, usec % 1000000, 1);
+}

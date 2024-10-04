@@ -30,6 +30,8 @@ list_node* list_push_back(list*, void*);
 list_node* list_push_front(list*, void*);
 list_node* list_pop_back(list*);
 list_node* list_pop_front(list*);
+list_node* list_insert_after(list*, list_node*, void*);
+list_node* list_insert_before(list*, list_node*, void*);
 
 list_node* list_get(list*, size_t);
 void*      list_get_raw(list*, size_t);

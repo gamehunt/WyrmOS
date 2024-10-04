@@ -19,5 +19,6 @@ extern int __invoke_syscall(uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, 
 #define __sys_getpid()         INVOKE_SYSCALL0(SYS_GETPID)
 #define __sys_kill(pid, s)     INVOKE_SYSCALL2(SYS_KILL, pid, s)
 #define __sys_signal(s, handl, old) INVOKE_SYSCALL3(SYS_SIGNAL, s, (uintptr_t) handl, (uintptr_t) old)
+#define __sys_sleep(seconds, microseconds, rel) INVOKE_SYSCALL3(SYS_SLEEP, seconds, microseconds, rel)
 
 #endif

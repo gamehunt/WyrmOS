@@ -11,6 +11,9 @@
 #define SYS_GETPID 5
 #define SYS_KILL   6
 #define SYS_SIGNAL 7
+#define SYS_SLEEP  8
+
+#define __SYS_TEST 0xFF
 
 int k_invoke_syscall(uint64_t n, uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, uintptr_t e, uintptr_t f);
 

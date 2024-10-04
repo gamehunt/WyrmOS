@@ -17,6 +17,7 @@
 static tree* __process_tree = NULL;
 static list* __process_list = NULL;
 static list* __ready_queue  = NULL;
+static list* __sleep_queue  = NULL;
 
 struct core cores[MAX_CORES] = {0};
 int core_count = 0;
@@ -25,6 +26,7 @@ static lock __process_queue_lock = EMPTY_LOCK;
 static lock __process_list_lock  = EMPTY_LOCK;
 static lock __dump_lock          = EMPTY_LOCK;
 static lock __sig_lock           = EMPTY_LOCK;
+static lock __sleep_lock         = EMPTY_LOCK;
 
 static _Atomic pid_t __pid = 0;
 
@@ -83,6 +85,9 @@ process* k_process_get_ready() {
 
 void k_process_make_ready(process* p) {
     LOCK(__process_queue_lock);
+    p->sleep_seconds    = 0;
+    p->sleep_subseconds = 0;
+    p->sleep_node       = NULL;
     if(p->ready_node != NULL) {
         list_prepend(__ready_queue, p->ready_node);
     } else {
@@ -97,7 +102,7 @@ void k_process_schedule_next() {
 	__k_proc_load_context(&current_core->current_process->ctx);
 }
 
-void k_process_yield() {
+void k_process_switch(int flags) {
 	if(current_core->current_process == current_core->idle_process) {
         k_warn("Preempted from idle process. Probably not a good thing.");
         goto next;
@@ -111,7 +116,9 @@ void k_process_yield() {
 		return; // Return from switch
 	}
 
-    k_process_make_ready((process*) current_core->current_process); 
+    if(flags & SWITCH_RESCHEDULE) {
+        k_process_make_ready((process*) current_core->current_process); 
+    }
 
 next:
     k_process_schedule_next();
@@ -208,6 +215,7 @@ pid_t k_process_fork() {
 void k_process_init() {
 	__process_list = list_create();
 	__ready_queue  = list_create();
+    __sleep_queue  = list_create();
 
 	process* init = __k_process_create_init();
 	k_process_spawn(init, NULL);
@@ -361,8 +369,73 @@ start:
     UNLOCK(__sig_lock);
 }
 
+void k_process_update_timings() {
+    uint64_t clock_ticks = arch_get_ticks() / arch_get_cpu_speed();
+    uint64_t seconds    = clock_ticks / SUBSECONDS_PER_SECOND;
+    uint64_t subseconds = clock_ticks % SUBSECONDS_PER_SECOND;
+    LOCK(__sleep_lock);
+    if(__sleep_queue->head) {
+        process* p = ((process*)__sleep_queue->head->value); 
+        while(p) {
+            uint64_t end_secs    = p->sleep_seconds;
+            uint64_t end_subsecs = p->sleep_subseconds;
+            // k_debug("%ld %ld %ld %ld", end_secs, end_subsecs, seconds, subseconds);
+            if((seconds > end_secs) || 
+                    (seconds == end_secs && 
+                     subseconds >= end_subsecs)) {
+                if(!is_ready(p)) {
+                    k_process_make_ready(p);
+                }
+                free(list_pop_front(__sleep_queue));
+                if(__sleep_queue->head) {
+                    p = __sleep_queue->head->value;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+    } 
+    UNLOCK(__sleep_lock);
+}
+
+void k_process_sleep(uint64_t seconds, uint64_t subseconds) {
+    LOCK(__sleep_lock);
+
+    if(current_core->current_process->sleep_node) {
+        goto end;
+    }
+
+    volatile process* cur = current_core->current_process;
+
+    cur->sleep_seconds    = seconds;
+    cur->sleep_subseconds = subseconds;
+    cur->flags = PROCESS_SLEEPING;
+
+    list_node* par = NULL;
+    foreach(node, __sleep_queue) {
+        process* _par = node->value;
+        if(_par->sleep_seconds > cur->sleep_seconds || 
+                (_par->sleep_seconds == cur->sleep_seconds 
+                 && _par->sleep_subseconds > cur->sleep_subseconds)) {
+            break;
+        }
+        par = node; 
+    }
+
+    if(!par) {
+        cur->sleep_node = list_push_front(__sleep_queue, (void*) cur); 
+    } else {
+        cur->sleep_node = list_insert_after(__sleep_queue, par, (void*) cur); 
+    }
+
+end:
+    UNLOCK(__sleep_lock);
+}
+
 EXPORT(k_process_init)
 EXPORT(k_process_spawn)
-EXPORT(k_process_yield)
+EXPORT(k_process_switch)
 EXPORT(k_process_get_ready)
 EXPORT(k_process_set_core)

@@ -47,6 +47,8 @@ extern uint64_t k_dev_get_cpu_speed();
 
 #endif
 
+#define SUBSECONDS_PER_SECOND 1000000
+
 void arch_stacktrace(regs* r);
 void arch_prepare_panic();
 void arch_dump(regs* r);

@@ -21,6 +21,7 @@ static uintptr_t __lapic_addr = 0;
 static volatile int __ap_flag = 0;
 
 static void __apic_tick(regs* r) {
+    k_process_update_timings();
     if(r->cs != 0x08) {
         k_process_yield();
     }
