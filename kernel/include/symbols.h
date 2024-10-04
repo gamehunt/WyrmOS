@@ -14,6 +14,8 @@ typedef struct _symbol symbol;
 
 #define EXPORT(func) __attribute__((used, section(".kernel_exported"))) \
 	static const symbol __export_##func = {.name = #func, .address = (uintptr_t) &func, .internal = 0, .pad = 0};
+#define EXPORT_ADDR(func, addr) __attribute__((used, section(".kernel_exported"))) \
+	static const symbol __export_##func = {.name = #func, .address = addr, .internal = 0, .pad = 0};
 
 #ifndef NO_INTERNAL_EXPORTS
 #define EXPORT_INTERNAL(func, addr) __attribute__((used, section(".kernel_exported"))) \

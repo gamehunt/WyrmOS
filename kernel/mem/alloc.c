@@ -263,7 +263,3 @@ void kfree(void* mem) {
 	}
     UNLOCK(heap_lock);
 }
-
-EXPORT(kfree);
-EXPORT(kmalloc_aligned);
-EXPORT(kmalloc);

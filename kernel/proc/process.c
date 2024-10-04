@@ -27,6 +27,7 @@ static lock __process_list_lock  = EMPTY_LOCK;
 static lock __dump_lock          = EMPTY_LOCK;
 static lock __sig_lock           = EMPTY_LOCK;
 static lock __sleep_lock         = EMPTY_LOCK;
+static lock __block_lock         = EMPTY_LOCK;
 
 static _Atomic pid_t __pid = 0;
 
@@ -87,12 +88,7 @@ void k_process_make_ready(process* p) {
     LOCK(__process_queue_lock);
     p->sleep_seconds    = 0;
     p->sleep_subseconds = 0;
-    p->sleep_node       = NULL;
-    if(p->ready_node != NULL) {
-        list_prepend(__ready_queue, p->ready_node);
-    } else {
-        p->ready_node = list_push_front(__ready_queue, p);
-    }
+    list_prepend(__ready_queue, p->ready_node);
     UNLOCK(__process_queue_lock);
 }
 
@@ -167,7 +163,11 @@ process* k_process_create(const char* name) {
 	memset(p, 0, sizeof(process));
 	strncpy(p->name, name, PROCESS_NAME_LENGTH);
 	p->ctx.kernel_stack = __k_process_alloc_kernel_stack();
-    p->fds = list_create();
+    p->fds        = list_create();
+    p->list_node  = list_create_node(p);
+    p->tree_node  = tree_create(p);
+    p->ready_node = list_create_node(p);
+    p->sleep_node = list_create_node(p);
 	return p;
 }
 
@@ -175,12 +175,10 @@ void k_process_spawn(process* p, process* parent) {
     LOCK(__process_list_lock);
 
 	if(parent) {
-		p->tree_node = tree_append(parent->tree_node, p);
-	} else {
-		p->tree_node = tree_create(p);
-	}
+		tree_append_child(parent->tree_node, p->tree_node);
+	} 
 
-	p->list_node = list_push_back(__process_list, p);
+	list_append(__process_list, p->list_node);
 	p->pid       = __get_pid();
 
     k_debug("%s (%d) spawned", p->name, p->pid);
@@ -386,7 +384,7 @@ void k_process_update_timings() {
                 if(!is_ready(p)) {
                     k_process_make_ready(p);
                 }
-                free(list_pop_front(__sleep_queue));
+                list_pop_front(__sleep_queue);
                 if(__sleep_queue->head) {
                     p = __sleep_queue->head->value;
                 } else {
@@ -400,10 +398,33 @@ void k_process_update_timings() {
     UNLOCK(__sleep_lock);
 }
 
+void k_process_sleep_on_queue(list* queue) {
+    if(is_locked(current_core->current_process)) {
+        k_process_switch(0);
+        return;
+    }
+    LOCK(__block_lock);
+    current_core->current_process->flags = PROCESS_SLEEPING;
+    list_append(queue, current_core->current_process->sleep_node);
+    UNLOCK(__block_lock);
+    k_process_switch(0);
+}
+
+void k_process_wakeup_queue(list* queue) {
+    LOCK(__block_lock);
+    while(queue->size) {
+        process* p = list_pop_back(queue)->value;
+        if(!(p->flags & PROCESS_FINISHED)) {
+            k_process_make_ready(p);
+        }
+    }
+    UNLOCK(__block_lock);
+}
+
 void k_process_sleep(uint64_t seconds, uint64_t subseconds) {
     LOCK(__sleep_lock);
 
-    if(current_core->current_process->sleep_node) {
+    if(is_locked(current_core->current_process)) {
         goto end;
     }
 
@@ -425,17 +446,11 @@ void k_process_sleep(uint64_t seconds, uint64_t subseconds) {
     }
 
     if(!par) {
-        cur->sleep_node = list_push_front(__sleep_queue, (void*) cur); 
+        list_prepend(__sleep_queue, cur->sleep_node); 
     } else {
-        cur->sleep_node = list_insert_after(__sleep_queue, par, (void*) cur); 
+        list_insert_after(__sleep_queue, par, (void*) cur); 
     }
 
 end:
     UNLOCK(__sleep_lock);
 }
-
-EXPORT(k_process_init)
-EXPORT(k_process_spawn)
-EXPORT(k_process_switch)
-EXPORT(k_process_get_ready)
-EXPORT(k_process_set_core)

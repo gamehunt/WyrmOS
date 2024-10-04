@@ -17,7 +17,7 @@ for line in fileinput.input():
        not sanitized_word.startswith('__export') and 
        not ("." in sanitized_word) and 
        not (sanitized_word in exclusions)):
-        export = f"EXPORT_INTERNAL({sanitized_word}, 0x{words[0]})\n"
+        export = f"EXPORT_ADDR({sanitized_word}, 0x{words[0]})\n"
         f.write(export)
 
 f.close()

@@ -251,7 +251,3 @@ int k_elf_exec(void* elf, int argc, const char** argv, const char** envp) {
 
     return -1;
 }
-
-EXPORT(k_elf_check)
-EXPORT(k_elf_load_module)
-EXPORT(k_elf_exec)

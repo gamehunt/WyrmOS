@@ -105,5 +105,3 @@ int k_invoke_syscall(uint64_t n, uintptr_t a, uintptr_t b, uintptr_t c, uintptr_
 	}	
     return __syscall_table[n](a, b, c, d, e, f);
 }
-
-

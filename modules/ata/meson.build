@@ -2,7 +2,7 @@ srcs = [
   'main.c',
 ]
 
-test_mod = executable('testmod', 
+ata_mod = executable('ata', 
   sources: srcs,
   include_directories: [includes, kernel_includes],
   c_args: [

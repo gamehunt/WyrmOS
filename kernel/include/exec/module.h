@@ -27,6 +27,7 @@ struct module_info {
     const char* __module_info_dependencies[] = {dependencies, "\0"};
 
 #ifdef __MODULE
+#include <dev/log.h>
 #undef k_print   
 #undef k_debug   
 #undef k_verbose

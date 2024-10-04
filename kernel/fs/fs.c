@@ -219,15 +219,3 @@ fs_node*  k_fs_alloc_fsnode(const char* name) {
 	strncpy(node->name, name, FS_NODE_NAME_LENGTH);
 	return node;
 }
-
-EXPORT(k_fs_alloc_fsnode)
-EXPORT(k_fs_create_mapping)
-EXPORT(k_fs_open)
-EXPORT(k_fs_close)
-EXPORT(k_fs_read)
-EXPORT(k_fs_readdir)
-EXPORT(k_fs_write)
-EXPORT(k_fs_register)
-EXPORT(k_fs_mount)
-EXPORT(k_fs_mount_node)
-EXPORT(k_fs_print_tree)

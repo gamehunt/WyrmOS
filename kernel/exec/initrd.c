@@ -174,5 +174,3 @@ int k_exec_initrd_load(void* address, size_t size) {
 	k_fs_mount_node(path, node);
 	return 0;
 }
-
-EXPORT(k_exec_initrd_load)

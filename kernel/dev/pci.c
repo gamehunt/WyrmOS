@@ -3,8 +3,10 @@
 #include "dev/log.h"
 #include "mem/mmio.h"
 #include "assert.h"
+#include "types/list.h"
 #include <dev/pci.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 typedef struct {
     uint8_t    access_type;
@@ -12,6 +14,7 @@ typedef struct {
 } pci_configuration;
 
 static pci_configuration __pci_conf = {0};
+static list* __devices = NULL;
 
 
 uint32_t k_dev_pci_read_dword(uint8_t bus, uint8_t device, uint8_t function, uint32_t offset) {
@@ -46,6 +49,14 @@ uint8_t  k_dev_pci_read_byte(uint8_t bus, uint8_t device, uint8_t function, uint
     return (k_dev_pci_read_word(bus, device, function, offset) >> (byte * 8)) & 0xFF;
 }
 
+pci_device* k_dev_pci_create_device(uint8_t bus, uint8_t device, uint8_t function) {
+    pci_device* dev = malloc(sizeof(pci_device));
+    dev->bus = bus;
+    dev->device = device;
+    dev->function = function;
+    return dev;
+}
+
 static void __k_dev_probe_bus(int bus);
 static void __k_dev_probe_device(int bus, uint8_t device, uint8_t function) {
     uint16_t vendor = k_dev_pci_read_word(bus, device, function, PCI_W_VENDOR);
@@ -54,6 +65,7 @@ static void __k_dev_probe_device(int bus, uint8_t device, uint8_t function) {
     }
     uint16_t dev = k_dev_pci_read_word(bus, device, function, PCI_W_DEVICE);
     k_debug("%d:%d:%d: 0x%.4x 0x%.4x", bus, device, function, vendor, dev);
+    list_push_back(__devices, k_dev_pci_create_device(bus, device, function));
     if(function == 0) {
         uint8_t header_type = k_dev_pci_read_byte(bus, device, function, PCI_B_HTYPE);
         if(header_type & 0x80) {
@@ -76,7 +88,23 @@ static void __k_dev_probe_bus(int bus) {
     }
 }
 
+list* k_dev_pci_get_devices() {
+    return __devices;
+}
+
+list*  k_dev_pci_find_devices(uint8_t class) {
+    list* r = list_create();
+    foreach(node, __devices) {
+        uint8_t class = k_dev_pci_read_byte(DEV_ADDR(((pci_device*)node->value)), PCI_B_CLASS);
+        if(class == 0x1) {
+            list_push_back(r, node->value);
+        }
+    }
+    return r;
+}
+
 void k_dev_pci_init() {
+    __devices = list_create();
     acpi_mcfg* mcfg = (acpi_mcfg*) k_dev_acpi_find_table("MCFG");
     if(mcfg) {
         k_debug("Found MCFG");

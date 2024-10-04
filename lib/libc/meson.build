@@ -53,5 +53,7 @@ libc = static_library('c',
 
 install_subdir('include', install_dir: 'include', strip_directory: true)
 
-libk_dep = declare_dependency(link_with : libk, include_directories : includes)
+libk_dep   = declare_dependency(link_with : libk, include_directories : includes)
+
+libc_h_dep = declare_dependency(include_directories : includes)
 libc_dep = declare_dependency(link_with : libc, include_directories : includes)

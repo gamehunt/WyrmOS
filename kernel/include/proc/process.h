@@ -14,7 +14,8 @@
 #define PROCESS_FINISHED (1 << 1)
 #define PROCESS_SLEEPING (1 << 2)
 
-#define is_ready(p) (p->ready_node != NULL && p->ready_node->owner != NULL)
+#define is_ready(p)  (p->ready_node->owner != NULL)
+#define is_locked(p) (p->sleep_node->owner != NULL)
 
 typedef struct {
     unsigned int id;
@@ -43,7 +44,6 @@ typedef struct {
 	list_node* list_node;
 	list_node* ready_node;
     list_node* sleep_node;
-    list_node* block_node;
 } process;
 
 #define pending(prc) prc->pending_signals
@@ -89,6 +89,9 @@ int      k_process_handle_signal(int sig, regs* r);
 void     k_process_exit_signal(regs* r);
 void     k_process_invoke_signals(regs* r);
 void     k_process_update_timings();
+
+void     k_process_sleep_on_queue(list* queue);
+void     k_process_wakeup_queue(list* queue);
 void     k_process_sleep(uint64_t seconds, uint64_t subseconds);
 
 #endif

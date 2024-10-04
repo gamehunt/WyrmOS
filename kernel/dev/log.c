@@ -84,5 +84,3 @@ void k_dev_log(enum LOG_LEVEL level, const char* prefix, const char* format, ...
 
     UNLOCK(__log_global_lock);
 }
-
-EXPORT(k_dev_log)

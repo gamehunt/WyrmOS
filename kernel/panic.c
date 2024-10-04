@@ -34,5 +34,3 @@ __attribute__((noreturn)) void panic(regs* r, const char* message, ...){
 	arch_stacktrace(r);
 	hcf();
 }
-
-EXPORT(panic);

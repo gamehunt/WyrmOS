@@ -38,11 +38,3 @@ __attribute__((noreturn)) void hcf(void) {
         asm volatile ("hlt");
     }
 }
-
-EXPORT(outb)
-EXPORT(outw)
-EXPORT(outl)
-EXPORT(inb)
-EXPORT(inw)
-EXPORT(inl)
-EXPORT(hcf)

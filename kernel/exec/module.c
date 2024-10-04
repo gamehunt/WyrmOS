@@ -150,5 +150,3 @@ int k_load_modules() {
 
 	return 0;
 }
-
-EXPORT(k_load_module)

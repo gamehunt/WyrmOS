@@ -78,11 +78,3 @@ path* path_join(path* p, const char* part) {
 	list_push_back(p->data, part_copy);
 	return p;
 }
-
-EXPORT(path_create)
-EXPORT(path_build)
-EXPORT(path_parse)
-EXPORT(path_free)
-EXPORT(path_join)
-EXPORT(path_filename)
-EXPORT(path_folder)
