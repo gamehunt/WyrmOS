@@ -12,7 +12,8 @@
 #define TO_VIRTUAL(phys)  ((phys) | HIGH_MAP)
 #define TO_PHYSICAL(virt) (k_mem_paging_get_physical(virt))
 
-#define PM_FL_USER (1 << 0)
+#define PM_FL_USER    (1 << 0)
+#define PM_FL_NOCACHE (1 << 1)
 
 union page {
     struct {

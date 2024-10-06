@@ -90,7 +90,7 @@ static void __printf_clear_params(__printf_params* p) {
 	p->flags     = 0;
 	p->width     = 0;
 	p->precision = 0;
-	p->length    = PAR_LEN_SIGNED;
+	p->length    = 0;
 }
 
 static int __emit_str(const char* str, __printf_params* par, uint8_t is_raw,  __char_emitter emitter, void* data) {

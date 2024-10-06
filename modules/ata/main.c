@@ -118,7 +118,7 @@ static void __ata_init(ata_device* dev) {
     k_debug("LBA28 sectors: %ld", *(uint32_t*)&__ata_ident[60]);
     k_debug("LBA48 sectors: %ld", *(uint64_t*)&__ata_ident[100]);
 
-    uint32_t bar = k_dev_pci_read_dword(DEV_ADDR(__ata_pci), PCI_DW_BAR(4));
+    uint32_t bar = k_dev_pci_read_dword(__ata_pci->address, PCI_DW_BAR(4));
 
     if(!(bar & 1)) {
         k_debug("Memory mapped BAR not impl. yet");
@@ -137,8 +137,13 @@ static void __ata_init(ata_device* dev) {
     k_fs_mount_node(path, ata);
 }
 
+static int __ata_pci_scanner(pci_device* dev) {
+    return k_dev_pci_read_byte(dev->address, PCI_B_CLASS) == 0x1 &&
+           k_dev_pci_read_byte(dev->address, PCI_B_SUBCLASS) == 0x1;
+}
+
 int load() {
-    list* storages = k_dev_pci_find_devices(0x1);
+    list* storages = k_dev_pci_find_devices(__ata_pci_scanner);
     if(storages->size) {
         __ata_pci = storages->head->value;
     }

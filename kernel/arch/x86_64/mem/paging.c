@@ -79,6 +79,7 @@ void k_mem_paging_map_ex(addr vaddr, addr paddr, uint8_t flags) {
 			p.bits.present  = 1;
 			p.bits.writable = 1;
 			p.bits.user     = flags & PM_FL_USER;
+            p.bits.nocache  = flags & PM_FL_NOCACHE;
 			if(i < 3 || paddr == 0) {
 				p.bits.page = FRAME(k_mem_pmm_alloc(1));
 			} else {

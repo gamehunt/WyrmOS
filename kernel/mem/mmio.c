@@ -3,6 +3,7 @@
 #include "dev/log.h"
 #include "mem/mem.h"
 #include "mem/paging.h"
+#include "mem/pmm.h"
 #include "proc/spinlock.h"
 #include "types/list.h"
 #include "util.h"
@@ -52,7 +53,7 @@ void* k_mem_iomap(uintptr_t phys, size_t size) {
     }
     size_t pages = PAGES(size);
     r = (void*) __mmio_start;
-    k_mem_paging_map_pages(__mmio_start, pages, phys);
+    k_mem_paging_map_pages_ex(__mmio_start, pages, phys, PM_FL_NOCACHE);
     __mmio_start += pages * PAGE_SIZE;
     iomap_region* region = malloc(sizeof(iomap_region));
     region->phys = phys;
@@ -64,4 +65,12 @@ void* k_mem_iomap(uintptr_t phys, size_t size) {
 
 void  k_mem_iounmap(void* mem) {
     k_verbose("k_mem_iounmap(): Unimplemented.");
+}
+
+void* k_mem_alloc_dma(size_t size, uintptr_t* phys) {
+    uint64_t p = k_mem_pmm_alloc(PAGES(size));
+    if(phys) {
+        *phys = p;
+    }
+    return k_mem_iomap(*phys, size);
 }
