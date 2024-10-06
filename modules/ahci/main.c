@@ -437,28 +437,26 @@ static uint16_t* __ahci_identify(HBA_PORT* port) {
 static void __init_port(HBA_MEM* mem, HBA_PORT* port) {
     __port_stop_cmd(port);
 
-    uint64_t command_frames = k_mem_pmm_alloc(PAGES(sizeof(HBA_CMD_HEADER) * 32));
+    uint64_t command_frames; 
+    volatile HBA_CMD_HEADER* command_list = k_mem_alloc_dma(sizeof(HBA_CMD_HEADER) * 32, &command_frames);
     port->clbu = (uint32_t) (command_frames >> 32);
     port->clb  = (uint32_t) (command_frames);
 
-    uint64_t fis_frames = k_mem_pmm_alloc(PAGES(sizeof(HBA_FIS)));
+    uint64_t fis_frames;
+    volatile HBA_FIS* fis = k_mem_alloc_dma(sizeof(HBA_FIS), &fis_frames); 
     port->fbu = (uint32_t) (fis_frames >> 32);
     port->fb  = (uint32_t) (fis_frames);
-
-    volatile HBA_CMD_HEADER* command_list  = k_mem_iomap(command_frames, sizeof(HBA_CMD_HEADER) * 32);
-    volatile HBA_FIS* fis                  = k_mem_iomap(fis_frames, sizeof(HBA_FIS)); 
 
     memset((void*) command_list, 0, sizeof(HBA_CMD_HEADER) * 32);
     memset((void*) fis, 0, sizeof(HBA_FIS));
 
     for(int i = 0; i < 32; i++) {
-        uint64_t command_tables_frames = k_mem_pmm_alloc(PAGES(sizeof(HBA_CMD_TBL)));
+        uint64_t command_tables_frames; 
+        HBA_CMD_TBL* table = k_mem_alloc_dma(sizeof(HBA_CMD_TBL), &command_tables_frames);
+        memset((void*) table, 0, sizeof(HBA_CMD_TBL));
         command_list[i].prdtl = 8;
         command_list[i].ctbau = (uint32_t) (command_tables_frames >> 32);
         command_list[i].ctba  = (uint32_t) (command_tables_frames);
-
-        HBA_CMD_TBL* table = k_mem_iomap(command_tables_frames, sizeof(HBA_CMD_TBL));
-        memset((void*) table, 0, sizeof(HBA_CMD_TBL));
     }
 
     __port_start_cmd(port);
@@ -469,9 +467,9 @@ static void __init_port(HBA_MEM* mem, HBA_PORT* port) {
         return;
     }
 
-    char* model  = __fix_ata_string(ident->model, 40);
+    char* model  = __fix_ata_string(ident->model,   40);
     char* firmwr = __fix_ata_string(ident->firmware, 8);
-    char* serial = __fix_ata_string(ident->serial, 20);
+    char* serial = __fix_ata_string(ident->serial,  20);
 
     k_debug("%s %s %s", model, firmwr, serial);
     k_debug("LBA28 size: %dMB", ident->sectors_28 / 512);
