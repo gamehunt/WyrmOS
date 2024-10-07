@@ -15,6 +15,7 @@ srcs = [
   'mem/alloc.c',
   'mem/pmm.c',
   'mem/mmio.c',
+  'mem/mmap.c',
   'fs/fs.c',
   'fs/path.c',
   'exec/initrd.c',

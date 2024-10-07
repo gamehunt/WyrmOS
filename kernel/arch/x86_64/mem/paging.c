@@ -43,7 +43,9 @@ static void __handle_pagefault(regs* r) {
     }
 }
 
+extern void __setup_flags();
 int k_mem_paging_init() {
+    __setup_flags();
 	__high_map_addr   = hhdm_request.response->offset;
 	current_core->pml =  __get_pml(__high_map_addr);
 	__root_pml        = current_core->pml;
@@ -77,9 +79,9 @@ void k_mem_paging_map_ex(addr vaddr, addr paddr, uint8_t flags) {
 			union page p; 
 			p.raw = 0;
 			p.bits.present  = 1;
-			p.bits.writable = 1;
-			p.bits.user     = flags & PM_FL_USER;
-            p.bits.nocache  = flags & PM_FL_NOCACHE;
+			p.bits.writable = (flags & PM_FL_WRITABLE) != 0;
+			p.bits.user     = (flags & PM_FL_USER)     != 0;
+            p.bits.nocache  = (flags & PM_FL_NOCACHE)  != 0;
 			if(i < 3 || paddr == 0) {
 				p.bits.page = FRAME(k_mem_pmm_alloc(1));
 			} else {

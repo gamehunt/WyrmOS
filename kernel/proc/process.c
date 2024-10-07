@@ -164,6 +164,8 @@ process* k_process_create(const char* name) {
 	strncpy(p->name, name, PROCESS_NAME_LENGTH);
 	p->ctx.kernel_stack = __k_process_alloc_kernel_stack();
     p->fds        = list_create();
+    p->mmap_start = MMAP_START;
+    p->mmap       = list_create();
     p->list_node  = list_create_node(p);
     p->tree_node  = tree_create(p);
     p->ready_node = list_create_node(p);

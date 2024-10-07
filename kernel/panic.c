@@ -1,6 +1,4 @@
 #include "arch.h"
-#include "mem/mem.h"
-#include "proc/process.h"
 #include "proc/spinlock.h"
 #include <panic.h>
 #include <asm.h>

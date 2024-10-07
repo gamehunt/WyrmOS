@@ -40,6 +40,8 @@ typedef struct {
     uint64_t   sleep_seconds;
     uint64_t   sleep_subseconds;
     list*      fds;
+    uintptr_t  mmap_start;
+    list*      mmap;
 	tree*      tree_node;
 	list_node* list_node;
 	list_node* ready_node;

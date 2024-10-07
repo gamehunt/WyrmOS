@@ -48,7 +48,10 @@ static void __init_apic_timer() {
 	*((volatile uint32_t*)(__lapic_addr + 0x380)) = target;
 }
 
+extern void __setup_flags();
 static void __init_core(struct limine_smp_info* info) {
+    __setup_flags();
+
     cores[info->extra_argument].id       = info->extra_argument;
     cores[info->extra_argument].lapic_id = info->lapic_id;
     cores[info->extra_argument].pml      = k_mem_paging_get_root_pml();

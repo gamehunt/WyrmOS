@@ -226,7 +226,7 @@ int k_elf_exec(void* elf, int argc, const char** argv, const char** envp) {
             }
             uintptr_t end = start + pages * PAGE_SIZE;
             k_debug("Aligning to: %#.16lx - %#.16lx", start, end);
-            k_mem_paging_map_pages_ex(start, pages, 0, PM_FL_USER); 
+            k_mem_paging_map_pages_ex(start, pages, 0, PM_FL_USER | PM_FL_WRITABLE); 
             if(end > exec_end) {
                 exec_end = end;
             }
@@ -241,7 +241,7 @@ int k_elf_exec(void* elf, int argc, const char** argv, const char** envp) {
 
     current_core->current_process->ctx.pml = k_mem_paging_clone_pml(NULL);
     k_mem_paging_set_pml(current_core->current_process->ctx.pml);
-    k_mem_paging_map_pages_ex(exec_end, PAGES(USER_STACK_SIZE), 0, PM_FL_USER);
+    k_mem_paging_map_pages_ex(exec_end, PAGES(USER_STACK_SIZE), 0, PM_FL_USER | PM_FL_WRITABLE);
 
     k_debug("Allocated %dB user stack at %#.16lx", USER_STACK_SIZE, exec_end);
     k_debug("Entry: %#.16lx", header->e_entry);
