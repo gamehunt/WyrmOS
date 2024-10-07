@@ -45,7 +45,6 @@ c_args_user = [
     '-mno-mmx', 
     '-mno-sse', 
     '-mno-sse2', 
-    '-mno-red-zone',
     '-g',
     '-pipe',
     '-static'

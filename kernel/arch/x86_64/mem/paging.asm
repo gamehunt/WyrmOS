@@ -1,8 +1,14 @@
 global __setup_flags
 __setup_flags:
     mov rax, cr0
+    or  rax, (1 << 1)
+    xor rax, (1 << 2)
     xor rax, (1 << 16)
     mov cr0, rax
+    mov rax, cr4
+    or  rax, (1 << 9)
+    or  rax, (1 << 10)
+    mov cr4, rax
     ret
 
 global __get_pml
