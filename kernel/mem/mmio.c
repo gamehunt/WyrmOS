@@ -74,3 +74,8 @@ void* k_mem_alloc_dma(size_t size, uintptr_t* phys) {
     }
     return k_mem_iomap(*phys, size);
 }
+
+void k_mem_free_dma(void* mem, size_t size) {
+    size_t pages = PAGES(size);
+    k_mem_pmm_free_frames(k_mem_paging_get_physical((uintptr_t) mem), pages);
+}

@@ -4,6 +4,7 @@
 #include "symbols.h"
 #include "mem/pmm.h"
 #include "types/list.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef __X86_64__
@@ -41,6 +42,9 @@ PROVIDES("storage")
 #define ATA_DEV_DRQ 0x08
 
 #define ATA_SECTOR_SIZE 512
+
+#define ATA_CMD_IDENTIFY    0xEC 
+#define ATA_CMD_READ_DMA_EX 0x25 
 
 typedef enum
 {
@@ -271,9 +275,12 @@ typedef struct {
 
 typedef struct {
 	HBA_MEM*  memory;
-	HBA_PORT* port;
+    int   port;
 	list* waiters;
+    list* cmd_waiters;
 } ahci_device;
+
+#define ncs(port) ((uint8_t)(port->cap >> 8) & 0xF)
 
 static list* __devices = NULL;
 
@@ -316,7 +323,7 @@ static const char* __typestr(int t) {
     }
 }
 
-static ahci_device* __create_device(HBA_MEM* mem, HBA_PORT* port) {
+static ahci_device* __create_device(HBA_MEM* mem, int port) {
 	ahci_device* device = malloc(sizeof(ahci_device));
 	device->memory  = mem;
 	device->port    = port;
@@ -382,6 +389,12 @@ static int __get_cmd_slot(HBA_PORT* port) {
     return -1;
 }
 
+#define ident_failure(msg) \
+		k_error("Port is hung\n"); \
+        k_mem_free_dma(buffer, 512); \
+        buffer = NULL; \
+        goto end; \
+
 static uint16_t* __ahci_identify(HBA_PORT* port) {
     port->is = (uint32_t) -1;
     int slot = __get_cmd_slot(port);
@@ -401,8 +414,12 @@ static uint16_t* __ahci_identify(HBA_PORT* port) {
     command_list[slot].w     = 0;
     command_list[slot].prdtl = 1;
 
-    HBA_CMD_TBL* table = k_mem_iomap(command_list[slot].ctba, sizeof(HBA_CMD_TBL));
-    memset(table, 0, sizeof(HBA_CMD_TBL) + (command_list->prdtl - 1) * sizeof(HBA_PRDT_ENTRY));
+    uint64_t table_phys;
+    HBA_CMD_TBL* table = k_mem_alloc_dma(sizeof(HBA_CMD_TBL), &table_phys);
+    memset(table, 0, sizeof(HBA_CMD_TBL));
+
+    command_list[slot].ctba  = (uint32_t) (table_phys);
+    command_list[slot].ctbau = (uint32_t) (table_phys >> 32);
 
 	table->prdt_entry[0].dba = (uint32_t) buffer_phys;
 	table->prdt_entry[0].dbc = 511;	
@@ -411,7 +428,7 @@ static uint16_t* __ahci_identify(HBA_PORT* port) {
     FIS_REG_H2D* cmdfis = (FIS_REG_H2D*)(&table->cfis);
     cmdfis->fis_type = FIS_TYPE_REG_H2D;
     cmdfis->c        = 1;
-    cmdfis->command  = 0xEC;
+    cmdfis->command  = ATA_CMD_IDENTIFY;
     cmdfis->device   = 0;
 
     int spin = 0;
@@ -422,8 +439,7 @@ static uint16_t* __ahci_identify(HBA_PORT* port) {
 	}
 	if (spin == 1000000)
 	{
-		k_error("Port is hung\n");
-		return NULL;
+		ident_failure("Port is hung\n");
 	}
 
     port->ci = (1 << slot);
@@ -438,22 +454,36 @@ static uint16_t* __ahci_identify(HBA_PORT* port) {
         }
 		if (port->is & (1 << 5)) // Task file error
 		{
-			k_error("Read disk error\n");
-			return NULL;
+			ident_failure("Read disk error\n");
 		}
 	}
 
 	// Check again
 	if (port->is & (1 << 5))
 	{
-		k_error("Read disk error\n");
-		return NULL;
+		ident_failure("Read disk error\n");
 	}
+
+end:
+    k_mem_free_dma(table, sizeof(HBA_CMD_TBL));
 
     return buffer;
 }
 
-static void __init_port(HBA_MEM* mem, HBA_PORT* port) {
+static char __letter = 'a';
+static size_t __ahci_read(fs_node* dev, size_t start, size_t bytes, uint8_t* buffer);
+
+static fs_node* __create_fsnode(ahci_device* dev) {
+    char name[] = {'s', 'd', __letter++, '\0'};
+    fs_node* node = k_fs_alloc_fsnode(name);
+    node->ops.read = __ahci_read;
+    node->meta = dev;
+    return node;
+}
+
+static void __init_port(HBA_MEM* mem, int _port) {
+    HBA_PORT* port = &mem->ports[_port];
+
     __port_stop_cmd(port);
 
     uint64_t command_frames; 
@@ -468,15 +498,6 @@ static void __init_port(HBA_MEM* mem, HBA_PORT* port) {
 
     memset((void*) command_list, 0, sizeof(HBA_CMD_HEADER) * 32);
     memset((void*) fis, 0, sizeof(HBA_FIS));
-
-    for(int i = 0; i < 32; i++) {
-        uint64_t command_tables_frames; 
-        HBA_CMD_TBL* table = k_mem_alloc_dma(sizeof(HBA_CMD_TBL), &command_tables_frames);
-        memset((void*) table, 0, sizeof(HBA_CMD_TBL));
-        command_list[i].prdtl = 8;
-        command_list[i].ctbau = (uint32_t) (command_tables_frames >> 32);
-        command_list[i].ctba  = (uint32_t) (command_tables_frames);
-    }
 
     __port_start_cmd(port);
 
@@ -494,34 +515,105 @@ static void __init_port(HBA_MEM* mem, HBA_PORT* port) {
     k_debug("LBA28 size: %dMB", ident->sectors_28 / 512);
     k_debug("LBA48 size: %dMB", ident->sectors_48 / 512);
 
-	list_push_back(__devices, __create_device(mem, port));
+    k_mem_free_dma(ident, 512);
+
+    fs_node* node = __create_fsnode(__create_device(mem, _port));
+
+	list_push_back(__devices, node->meta);
+
+    char path[32] = {0};
+    snprintf(path, 32, "/dev/%s", node->name);
+    k_fs_mount_node(path, node);
 }
 
-// TODO
-static void __ahci_init_prdt_for_buffer(HBA_CMD_HEADER* cmd, void* buffer, size_t size) {
-	size_t regions = 0;
-	uint64_t prev  = 0;
-	for(size_t i = 0; i < size; i += PAGE_SIZE) {
-		uint64_t phys = k_mem_paging_get_physical(((uintptr_t) buffer) + i);
-		if(phys != prev || i % KB(8) == 1) {
-			regions++;
-		}
-		prev = phys;
-	}
-	cmd->prdtl = regions;	
-    HBA_CMD_TBL* table = k_mem_iomap(cmd->ctba, sizeof(HBA_CMD_TBL));
+// TODO map non-dma buffer for this?
+static HBA_CMD_TBL* __ahci_init_prdt_for_buffer(volatile HBA_CMD_HEADER* cmd, void* buffer, size_t size) {
+	cmd->prdtl = size / KB(8) + !!(size % KB(8));	
+    uint64_t table_phys;
+    HBA_CMD_TBL* table = k_mem_alloc_dma(sizeof(HBA_CMD_TBL) + (cmd->prdtl - 1) * sizeof(HBA_PRDT_ENTRY), &table_phys);
+    cmd->ctba  = (uint32_t) (table_phys);
+    cmd->ctbau = (uint32_t) (table_phys >> 32);
     memset(table, 0, sizeof(HBA_CMD_TBL) + (cmd->prdtl - 1) * sizeof(HBA_PRDT_ENTRY));
 	for(size_t i = 0; i < cmd->prdtl; i++) {
-		uint64_t phys = k_mem_paging_get_physical((uintptr_t) buffer + i * PAGE_SIZE);
-		table->prdt_entry[i].dba  = (uint32_t)((uintptr_t) buffer);	
-		table->prdt_entry[i].dbau = (uint32_t)((uintptr_t) buffer >> 32);	
+		uint64_t phys = k_mem_paging_get_physical((uintptr_t) buffer + i * KB(8));
+		table->prdt_entry[i].dba  = (uint32_t)((uintptr_t) phys);	
+		table->prdt_entry[i].dbau = (uint32_t)((uintptr_t) phys >> 32);	
 		table->prdt_entry[i].dbc  = size >= KB(8) ? KB(8) : size;
 		table->prdt_entry[i].i    = i == cmd->prdtl - 1;
+        size -= i * KB(8);
 	}
+    return table;
 }
 
+#define device_port(dev) (&dev->memory->ports[dev->port])
+
 static size_t __ahci_read_sectors(ahci_device* device, size_t start, size_t sectors, uint8_t* buffer) {
-	k_process_sleep_on_queue(device->waiters);
+    HBA_PORT* port = device_port(device);
+
+    port->is = (uint32_t) -1;
+    int slot = -1;
+
+    do {
+        slot = __get_cmd_slot(port);
+        if(slot == -1) {
+            k_process_sleep_on_queue(device->cmd_waiters);
+        } else {
+            break;
+        }
+    } while(1);
+
+    volatile HBA_CMD_HEADER* command_list  = k_mem_iomap(port->clb, sizeof(HBA_CMD_HEADER) * 32);
+
+    command_list[slot].cfl   = sizeof(FIS_REG_H2D) / sizeof(uint32_t);
+    command_list[slot].w     = 0;
+
+    HBA_CMD_TBL* table = __ahci_init_prdt_for_buffer(&command_list[slot], buffer, sectors * ATA_SECTOR_SIZE);
+
+	FIS_REG_H2D *cmdfis = (FIS_REG_H2D*)(&table->cfis);
+
+	cmdfis->fis_type = FIS_TYPE_REG_H2D;
+	cmdfis->c = 1;	// Command
+	cmdfis->command = ATA_CMD_READ_DMA_EX;
+
+	cmdfis->lba0 = (uint8_t) start;
+	cmdfis->lba1 = (uint8_t)(start >> 8);
+	cmdfis->lba2 = (uint8_t)(start >> 16);
+	cmdfis->device = 1 << 6; // LBA mode
+
+	cmdfis->lba3 = (uint8_t)(start >> 24);
+	cmdfis->lba4 = (uint8_t)(start >> 32);
+	cmdfis->lba5 = (uint8_t)(start >> 48);
+
+	cmdfis->countl = sectors & 0xFF;
+	cmdfis->counth = (sectors >> 8) & 0xFF;
+
+    int spin = 0;
+
+    // The below loop waits until the port is no longer busy before issuing a new command
+	while ((port->tfd & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000)
+	{
+		spin++;
+	}
+
+	if (spin == 1000000)
+	{
+		k_error("Port is hung");
+        command_list[slot].ctba  = 0; // IDK, what kind of cleanup we need there?
+        command_list[slot].ctbau = 0;
+        k_mem_free_dma(table, sizeof(HBA_CMD_TBL) + sizeof(HBA_PRDT_ENTRY) * (command_list[slot].prdtl - 1));
+		return 0;
+	}
+
+	port->ci = 1 << slot; // Issue command
+
+    while(port->ci & (1 << slot)) {
+	    k_process_sleep_on_queue(device->waiters);
+        if(port->is & (1 << 5)) {
+            k_error("I/O error");
+            return 0;
+        }
+    }
+
 	return sectors;
 }
 
@@ -539,22 +631,26 @@ static size_t __ahci_read(fs_node* dev, size_t start, size_t bytes, uint8_t* buf
 		bytes = ALIGN(bytes, ATA_SECTOR_SIZE);
 	}
 
-	void* tmp = malloc(bytes);
+	void* tmp = k_mem_alloc_dma(bytes, NULL);
 	size_t sectors = __ahci_read_sectors(d, start / ATA_SECTOR_SIZE, bytes / ATA_SECTOR_SIZE, tmp);
 	if(sectors * ATA_SECTOR_SIZE < bytes) {
 		originalSize = sectors * ATA_SECTOR_SIZE;
 	}
 
 	memcpy(buffer, tmp + (originalOffset - start % ATA_SECTOR_SIZE), originalSize);
-	free(tmp);
+	k_mem_free_dma(tmp, bytes);
 
 	return originalSize;
 }
 
-
-
 static void __ahci_irq(regs* r) {
     IRQ_ACK(INT_TO_IRQ(r->int_no));
+    foreach(_dev, __devices) {
+        ahci_device* dev = _dev->value;  
+        if(dev->memory->is & (1 << dev->port)) {
+            k_process_wakeup_queue(dev->waiters);
+        }
+    }
 }
 
 static void __try_init_ahci(pci_device* dev) {
@@ -598,7 +694,7 @@ static void __try_init_ahci(pci_device* dev) {
         k_debug("Port %d: drive=%s, status=%d", i, __typestr(type), mem->ports[i].ssts);
 
         if(type == AHCI_DEV_SATA) {
-            __init_port(mem, &mem->ports[i]);
+            __init_port(mem, i);
         }
     }
 }
