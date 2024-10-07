@@ -411,6 +411,7 @@ void k_process_sleep_on_queue(list* queue) {
 }
 
 void k_process_wakeup_queue(list* queue) {
+    assert(queue != NULL);
     LOCK(__block_lock);
     while(queue->size) {
         process* p = list_pop_back(queue)->value;

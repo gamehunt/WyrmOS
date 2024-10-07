@@ -72,7 +72,7 @@ void* k_mem_alloc_dma(size_t size, uintptr_t* phys) {
     if(phys) {
         *phys = p;
     }
-    return k_mem_iomap(*phys, size);
+    return k_mem_iomap(p, size);
 }
 
 void k_mem_free_dma(void* mem, size_t size) {

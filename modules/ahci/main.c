@@ -325,9 +325,10 @@ static const char* __typestr(int t) {
 
 static ahci_device* __create_device(HBA_MEM* mem, int port) {
 	ahci_device* device = malloc(sizeof(ahci_device));
-	device->memory  = mem;
-	device->port    = port;
-	device->waiters = list_create();
+	device->memory      = mem;
+	device->port        = port;
+	device->waiters     = list_create();
+    device->cmd_waiters = list_create();
 	return device;
 }
 
@@ -539,7 +540,7 @@ static HBA_CMD_TBL* __ahci_init_prdt_for_buffer(volatile HBA_CMD_HEADER* cmd, vo
 		table->prdt_entry[i].dba  = (uint32_t)((uintptr_t) phys);	
 		table->prdt_entry[i].dbau = (uint32_t)((uintptr_t) phys >> 32);	
 		table->prdt_entry[i].dbc  = size >= KB(8) ? KB(8) : size;
-		table->prdt_entry[i].i    = i == cmd->prdtl - 1;
+		table->prdt_entry[i].i    = (i == (cmd->prdtl - 1));
         size -= i * KB(8);
 	}
     return table;
@@ -606,6 +607,8 @@ static size_t __ahci_read_sectors(ahci_device* device, size_t start, size_t sect
 
 	port->ci = 1 << slot; // Issue command
 
+    k_debug("Command sent.");
+
     while(port->ci & (1 << slot)) {
 	    k_process_sleep_on_queue(device->waiters);
         if(port->is & (1 << 5)) {
@@ -639,6 +642,8 @@ static size_t __ahci_read(fs_node* dev, size_t start, size_t bytes, uint8_t* buf
 
 	memcpy(buffer, tmp + (originalOffset - start % ATA_SECTOR_SIZE), originalSize);
 	k_mem_free_dma(tmp, bytes);
+
+    k_process_wakeup_queue(d->cmd_waiters);
 
 	return originalSize;
 }
