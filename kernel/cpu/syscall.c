@@ -1,6 +1,7 @@
 #include "arch.h"
 #include "dev/log.h"
 #include "fs/fs.h"
+#include "mem/mmap.h"
 #include "mem/paging.h"
 #include "proc/process.h"
 #include <cpu/syscall.h>
@@ -82,6 +83,24 @@ static int sys_test() {
     return 0;
 }
 
+static int sys_mmap(uintptr_t* start, size_t size, uint8_t flags, int prot, int fd, off_t offs) {
+    if(!validate_ptr(start, sizeof(uintptr_t))) {
+        return -1;
+    }
+    mmap_block* bl = k_mem_mmap(*start, size, flags, prot, fd, offs);
+    if(!bl) {
+        *start = 0;
+        return -1;
+    }
+    *start = bl->start;
+    return 0;
+}
+
+static int sys_munmap(uintptr_t start, size_t size) {
+    k_mem_munmap(start, size);
+    return 0;
+}
+
 typedef int (*syscall_handler)(uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, uintptr_t e, uintptr_t f);
 static const syscall_handler __syscall_table[] = {
     [SYS_OPEN]   = (syscall_handler) sys_open,
@@ -93,6 +112,8 @@ static const syscall_handler __syscall_table[] = {
     [SYS_KILL]   = (syscall_handler) sys_kill,
     [SYS_SIGNAL] = (syscall_handler) sys_signal,
     [SYS_SLEEP]  = (syscall_handler) sys_sleep,
+    [SYS_MMAP]   = (syscall_handler) sys_mmap,
+    [SYS_MUNMAP] = (syscall_handler) sys_munmap,
     [__SYS_TEST] = (syscall_handler) sys_test
 };
 

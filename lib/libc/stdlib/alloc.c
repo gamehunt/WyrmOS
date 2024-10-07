@@ -5,11 +5,16 @@
 #include <mem/alloc.h>
 #endif
 
+#ifndef __LIBK
+extern void* __malloc(size_t size);
+extern void __free(void* mem);
+#endif
+
 void* __attribute__ ((malloc)) malloc(size_t size) {
 #ifdef __LIBK
 	return kmalloc(size);
 #else
-	return NULL;
+	return __malloc(size);
 #endif
 }
 
@@ -29,5 +34,7 @@ void* __attribute__ ((malloc)) calloc(size_t num, size_t size) {
 void free(void* ptr) {
 #ifdef __LIBK
 	kfree(ptr);
+#else
+    __free(ptr);
 #endif
 }

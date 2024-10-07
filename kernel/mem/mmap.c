@@ -1,8 +1,11 @@
 #include <mem/mmap.h>
 #include <stdlib.h>
+#include "dev/log.h"
 #include "mem/mem.h"
 #include "mem/paging.h"
+#include "panic.h"
 #include "proc/process.h"
+#include "sys/mman.h"
 #include "types/list.h"
 #include "util.h"
 
@@ -22,33 +25,37 @@ static uintptr_t __alloc_region(size_t pages) {
     return s;
 }
 
-mmap_block* k_mem_mmap(uintptr_t start, size_t size, uint8_t flags, int prot, int fd) {
+mmap_block* k_mem_mmap(uintptr_t start, size_t size, uint8_t flags, int prot, int fd, off_t offset) {
     mmap_block* bl = malloc(sizeof(mmap_block));
     bl->size = size;
 
     size_t pages = PAGES(size);
     
     if(!start) {
-        if(flags & MAP_ANONYMOUS) {
+        if(flags & MAP_FIXED) {
+            k_debug("mmap: start == 0 when MAP_FIXED");
+            return NULL;
+        } else if(flags & MAP_ANONYMOUS) {
             start = __alloc_region(pages);
         } else {
             // TODO do something
         }
     }
 
-    bl->start = start;
-    bl->flags = flags;
-    bl->fd    = fd;
+    bl->start  = start;
+    bl->flags  = flags;
+    bl->fd     = fd;
+    bl->offset = offset;
 
     list_push_back(current_core->current_process->mmap, bl);
 
     uint8_t page_flags = PM_FL_USER;
 
-    switch(prot) {
-        case PROT_WRITE:
-            page_flags |= PM_FL_WRITABLE;
-        case PROT_NONE:
-            return bl;
+    if(prot == PROT_NONE) {
+        k_debug("mmap: not mapping PROT_NONE");
+        return bl;
+    } else if(prot & PROT_WRITE) {
+        page_flags |= PM_FL_WRITABLE;
     }
 
     k_mem_paging_map_pages_ex(start, pages, 0, page_flags);
@@ -60,7 +67,7 @@ mmap_block* k_mem_mmap(uintptr_t start, size_t size, uint8_t flags, int prot, in
     return bl;
 }
 
-void k_mem_unmap(uintptr_t start, size_t size) {
+void k_mem_munmap(uintptr_t start, size_t size) {
     list_node* bl = __find_existing_mmap(start, size);
     
     if(!bl) {

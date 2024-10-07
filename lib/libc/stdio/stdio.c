@@ -36,7 +36,7 @@ int fprintf(FILE * stream, const char * format, ...) {
     return r;
 }
 
-size_t  fread(void* b, size_t o, size_t s, FILE* f) {
+size_t fread(void* b, size_t o, size_t s, FILE* f) {
     return 0;
 }
 

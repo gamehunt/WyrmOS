@@ -13,7 +13,7 @@ CHEADER_START
 
 #if !defined(__LIBK) && !defined(__KERNEL)
 typedef struct {
-    int pad;
+    int fd;
 } FILE;
 
 int     feof(FILE *stream);
