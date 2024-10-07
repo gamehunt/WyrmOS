@@ -29,6 +29,7 @@ struct core;
 extern void arch_set_core_base(struct core* addr);
 
 extern void      arch_user_jmp(uintptr_t entry, uintptr_t stack);
+extern void      arch_user_jmp_exec(int argc, const char** argv, char** envp, uintptr_t entry, uintptr_t stack);
 extern int       arch_enter_signal(uintptr_t entry, int sig, regs* r);
 extern int       arch_exit_signal(regs* r);
 extern uintptr_t arch_get_stack();

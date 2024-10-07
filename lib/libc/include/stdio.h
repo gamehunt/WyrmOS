@@ -12,8 +12,18 @@
 CHEADER_START
 
 #if !defined(__LIBK) && !defined(__KERNEL)
+
+#include <sys/types.h>
+
+#define BUFSIZ 8192
+
 typedef struct {
-    int fd;
+    int    fd;
+    off_t  offset;
+    char*  rbuf;
+    char*  wbuf;
+    size_t bufsz;
+    int    eof;
 } FILE;
 
 int     feof(FILE *stream);
@@ -28,13 +38,10 @@ size_t  fread(void*, size_t, size_t, FILE*);
 size_t  fwrite(const void*, size_t, size_t, FILE*);
 void    setbuf(FILE*, char*);
 
-extern FILE* _stdout;
-extern FILE* _stdin;
-extern FILE* _stderr;
+extern FILE* stdout;
+extern FILE* stdin;
+extern FILE* stderr;
 
-#define stdout _stdout
-#define stdin  _stdin
-#define stderr _stderr
 #endif
 
 int putchar(int ch);

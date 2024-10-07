@@ -16,7 +16,8 @@ user_srcs = [
   'stdlib/_alloc.c',
   'wyrm/syscall.asm',
   'sys/mman.c',
-  'signal.c'
+  'signal.c',
+  'libc.c',
 ]
 
 libk = static_library('k', 

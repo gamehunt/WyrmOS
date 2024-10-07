@@ -4,7 +4,7 @@
 #include <stddef.h>
 
 /* Executor should clean data itself before proceeding further */
-typedef int(*exec_func)(void* data, int argc, const char** argv, const char** envp);
+typedef int(*exec_func)(void* data, int argc, const char** argv, char** envp);
 typedef int(*fmt_checker)(void* data, size_t size);
 
 typedef struct {
@@ -13,7 +13,7 @@ typedef struct {
 } executor;
 
 void k_exec_init();
-int  k_exec(const char* exec, int argc, const char** argv, const char** envp);
+int  k_exec(const char* exec, int argc, const char** argv, char** envp);
 void k_exec_register_executor(executor* ex);
 
 #endif

@@ -19,6 +19,16 @@ arch_load_ctx:
     mov  rax, 1     ; Make save function return 1
     jmp [rdi + 16]  ; Jump
 
+global arch_user_jmp_exec ; int argc, const char** argv, char** envp, uintptr_t entrypoint, uintptr_t stack
+arch_user_jmp_exec:
+	push 0x23 ; ss
+	push r8  ; rsp
+	push 0x200200  ; rflags (INT | CPUID)
+	push 0x1b ; cs
+	push rcx  ; rip
+    swapgs
+	iretq
+
 global arch_user_jmp ; uintptr_t entrypoint, uintptr_t stack
 arch_user_jmp:
 	push 0x23 ; ss

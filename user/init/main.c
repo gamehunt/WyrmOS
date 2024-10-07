@@ -1,7 +1,8 @@
 #include <stdlib.h>
 
 int main() {
-    malloc(123);
+    int* a = malloc(123);
+    *a = 12345;
     while(1) { 
     }
     return 0;

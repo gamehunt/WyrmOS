@@ -196,7 +196,7 @@ struct module_info* k_elf_load_module(void* elf) {
 }
 
 extern void __attribute__((noreturn)) __usr_jmp(uintptr_t entry, uintptr_t stack);
-int k_elf_exec(void* elf, int argc, const char** argv, const char** envp) {
+int k_elf_exec(void* elf, int argc, const char** argv, char** envp) {
 	uint8_t version = k_elf_check(elf);
 	if(version != ELF_CLASS64) {
 		k_error("Invalid e_ident: %d", version);
@@ -247,7 +247,7 @@ int k_elf_exec(void* elf, int argc, const char** argv, const char** envp) {
     k_debug("Entry: %#.16lx", header->e_entry);
     
     k_mem_set_kernel_stack((uintptr_t) current_core->current_process->ctx.kernel_stack);
-	arch_user_jmp(header->e_entry, exec_end + USER_STACK_SIZE);
+	arch_user_jmp_exec(argc, argv, envp, header->e_entry, exec_end + USER_STACK_SIZE);
 
     return -1;
 }

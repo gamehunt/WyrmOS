@@ -14,6 +14,7 @@
 #define SYS_SLEEP   8
 #define SYS_MMAP    9
 #define SYS_MUNMAP  10
+#define SYS_CLOSE   11
 
 #define __SYS_TEST 0xFF
 

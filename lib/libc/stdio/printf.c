@@ -245,7 +245,7 @@ static int __put_number_float(double number, unsigned int base, uint8_t flags, _
 }
 #endif
 
-static int __vprintf_generic(const char* format, va_list arg_ptr, __char_emitter emitter, void* data) {
+int __vprintf_generic(const char* format, va_list arg_ptr, __char_emitter emitter, void* data) {
 	uint8_t flags = 0;
 	int written   = 0;
 	__printf_params params;
@@ -462,3 +462,13 @@ int vsnprintf(char *str, size_t size, const char *format, va_list ap) {
 	positioned_buffer buf_wrapper = {0, size, str};
 	return __vprintf_generic(format, ap, __buffer_putchar, &buf_wrapper);
 }
+
+#ifndef __LIBK
+static int __stream_putchar(int c, void* data) {
+    return fwrite(&c, 1, 1, (FILE*) data);
+}
+
+int vfprintf(FILE* stream, const char * format, va_list ap) {
+    return __vprintf_generic(format, ap, __stream_putchar, stream);
+}
+#endif

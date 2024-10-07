@@ -3,7 +3,6 @@
 #include "dev/log.h"
 #include "mem/mem.h"
 #include "mem/paging.h"
-#include "panic.h"
 #include "proc/process.h"
 #include "sys/mman.h"
 #include "types/list.h"

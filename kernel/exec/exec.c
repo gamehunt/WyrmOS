@@ -34,7 +34,7 @@ void k_exec_init() {
     k_exec_register_executor(&__elf_executor);
 }
 
-int k_exec(const char* path, int argc, const char** argv, const char** envp) {
+int k_exec(const char* path, int argc, const char** argv, char** envp) {
     if(!__exec_list) {
         k_error("No executors registered while trying to run %s", path);
         return -1;
