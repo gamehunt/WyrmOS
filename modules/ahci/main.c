@@ -1,6 +1,9 @@
 #include "arch.h"
+#include "mem/paging.h"
+#include "proc/process.h"
 #include "symbols.h"
 #include "mem/pmm.h"
+#include "types/list.h"
 #include <stdlib.h>
 #include <string.h>
 #ifdef __X86_64__
@@ -14,8 +17,6 @@
 
 DEFINE_MODULE("ahci", load, unload)
 PROVIDES("storage")
-
-#define	AHCI_BASE	0x400000	// 4M
 
 #define HBA_PxCMD_ST    0x0001
 #define HBA_PxCMD_FRE   0x0010
@@ -38,6 +39,8 @@ PROVIDES("storage")
 
 #define ATA_DEV_BUSY 0x80
 #define ATA_DEV_DRQ 0x08
+
+#define ATA_SECTOR_SIZE 512
 
 typedef enum
 {
@@ -266,6 +269,14 @@ typedef struct {
 	uint16_t unused7[152];
 } __attribute__((packed)) ata_identify_t;
 
+typedef struct {
+	HBA_MEM*  memory;
+	HBA_PORT* port;
+	list* waiters;
+} ahci_device;
+
+static list* __devices = NULL;
+
 static int __ahci_type(HBA_PORT* port) {
 	uint32_t ssts = port->ssts;
 
@@ -303,6 +314,14 @@ static const char* __typestr(int t) {
         default:
             return "Unknown / No drive";
     }
+}
+
+static ahci_device* __create_device(HBA_MEM* mem, HBA_PORT* port) {
+	ahci_device* device = malloc(sizeof(ahci_device));
+	device->memory  = mem;
+	device->port    = port;
+	device->waiters = list_create();
+	return device;
 }
 
 static char* __fix_ata_string(char* string, int len) {
@@ -474,7 +493,65 @@ static void __init_port(HBA_MEM* mem, HBA_PORT* port) {
     k_debug("%s %s %s", model, firmwr, serial);
     k_debug("LBA28 size: %dMB", ident->sectors_28 / 512);
     k_debug("LBA48 size: %dMB", ident->sectors_48 / 512);
+
+	list_push_back(__devices, __create_device(mem, port));
 }
+
+// TODO
+static void __ahci_init_prdt_for_buffer(HBA_CMD_HEADER* cmd, void* buffer, size_t size) {
+	size_t regions = 0;
+	uint64_t prev  = 0;
+	for(size_t i = 0; i < size; i += PAGE_SIZE) {
+		uint64_t phys = k_mem_paging_get_physical(((uintptr_t) buffer) + i);
+		if(phys != prev || i % KB(8) == 1) {
+			regions++;
+		}
+		prev = phys;
+	}
+	cmd->prdtl = regions;	
+    HBA_CMD_TBL* table = k_mem_iomap(cmd->ctba, sizeof(HBA_CMD_TBL));
+    memset(table, 0, sizeof(HBA_CMD_TBL) + (cmd->prdtl - 1) * sizeof(HBA_PRDT_ENTRY));
+	for(size_t i = 0; i < cmd->prdtl; i++) {
+		uint64_t phys = k_mem_paging_get_physical((uintptr_t) buffer + i * PAGE_SIZE);
+		table->prdt_entry[i].dba  = (uint32_t)((uintptr_t) buffer);	
+		table->prdt_entry[i].dbau = (uint32_t)((uintptr_t) buffer >> 32);	
+		table->prdt_entry[i].dbc  = size >= KB(8) ? KB(8) : size;
+		table->prdt_entry[i].i    = i == cmd->prdtl - 1;
+	}
+}
+
+static size_t __ahci_read_sectors(ahci_device* device, size_t start, size_t sectors, uint8_t* buffer) {
+	k_process_sleep_on_queue(device->waiters);
+	return sectors;
+}
+
+static size_t __ahci_read(fs_node* dev, size_t start, size_t bytes, uint8_t* buffer) {
+	ahci_device* d = dev->meta;
+
+	size_t originalSize   = bytes;
+	size_t originalOffset = start;
+
+	if(bytes < ATA_SECTOR_SIZE) {
+		bytes = ATA_SECTOR_SIZE;
+	}
+
+	if(bytes % ATA_SECTOR_SIZE) {
+		bytes = ALIGN(bytes, ATA_SECTOR_SIZE);
+	}
+
+	void* tmp = malloc(bytes);
+	size_t sectors = __ahci_read_sectors(d, start / ATA_SECTOR_SIZE, bytes / ATA_SECTOR_SIZE, tmp);
+	if(sectors * ATA_SECTOR_SIZE < bytes) {
+		originalSize = sectors * ATA_SECTOR_SIZE;
+	}
+
+	memcpy(buffer, tmp + (originalOffset - start % ATA_SECTOR_SIZE), originalSize);
+	free(tmp);
+
+	return originalSize;
+}
+
+
 
 static void __ahci_irq(regs* r) {
     IRQ_ACK(INT_TO_IRQ(r->int_no));
@@ -538,6 +615,7 @@ int load() {
     if(!storages->size) {
         k_debug("No AHCI devices found.");
     }
+	__devices = list_create();
     foreach(node, storages) {
         __try_init_ahci(node->value);
     }
