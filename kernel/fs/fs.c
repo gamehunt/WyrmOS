@@ -1,5 +1,5 @@
 #include "dev/log.h"
-#include "symbols.h"
+#include "fcntl.h"
 #include "types/list.h"
 #include <fs/fs.h>
 #include <fs/path.h>
@@ -134,7 +134,7 @@ void k_fs_mount_node(const char* path, fs_node* node) {
 }
 
 fs_node* k_fs_mount(const char* _path, const char* device, const char* type) {
-	fs_node* dev = k_fs_open(device, FS_O_RW);
+	fs_node* dev = k_fs_open(device, O_RDWR);
 
 	if(!dev) {
 		k_error("%s: device not found", device);

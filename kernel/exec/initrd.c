@@ -1,4 +1,5 @@
 #include "dev/log.h"
+#include "fcntl.h"
 #include "fs/fs.h"
 #include "fs/path.h"
 #include "symbols.h"
@@ -123,7 +124,7 @@ static int __initrd_readdir(fs_node* root, dirent* dir, size_t index) {
 }
 
 static fs_node* __initrd_open(fs_node* root, path* p, uint16_t flags) {
-	if(flags & FS_O_DIR) {
+	if(flags & O_DIR) {
 		p->flags |= P_DIR;
 	} else {
 		p->flags &= ~P_DIR;

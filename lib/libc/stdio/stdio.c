@@ -1,6 +1,9 @@
+#include "fcntl.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <wyrm/syscall.h>
+#include <fs/fs.h>
 
 static FILE _stdin = {
     .fd     = 0,
@@ -39,9 +42,48 @@ int fflush(FILE *stream) {
     return 0;
 }
 
+static int __flags(const char* access) {
+    int len = strlen(access);
+    if(len == 0) {
+        return -1;
+    } else {
+        int fl = 0;
+        int ex = 0;
+
+        if((len >= 2 && access[1] == '+') || (len == 3 && access[2] == '+')) {
+            ex = 1;
+        }
+
+        switch(access[0]) {
+            case 'r':
+                if(!ex) {
+                    fl = O_RDONLY;
+                } else {
+                    fl = O_RDWR;
+                }
+                break;
+            case 'w':
+                if(!ex) {
+                    fl = O_WRONLY;
+                } else {
+                    fl = O_RDWR | O_CREAT | O_TRUNC;
+                }
+                break;
+            case 'a':
+                fl = O_WRONLY | O_CREAT | O_APPEND;
+                break;
+        }
+
+        return fl;
+    }
+}
+
 FILE* fopen(const char* path, const char* access) {
-    int flags = 0;
-    int fd = __sys_open(path, flags);
+    int flags = __flags(access);
+    if(flags == -1) {
+        return NULL;
+    }
+    int fd = open(path, flags);
     FILE* f = calloc(1, sizeof(FILE));
     f->fd = fd;
     return f;

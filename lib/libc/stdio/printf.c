@@ -12,9 +12,10 @@
 int putchar(int ch) {
 #ifdef __LIBK
 	k_print("%c", ch);
-	return ch;
+#else
+    fwrite(&ch, 1, 1, stdout);
 #endif
-	return EOF;
+	return ch;
 }
 
 int puts(const char *s) {

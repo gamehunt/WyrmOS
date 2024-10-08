@@ -4,6 +4,7 @@
 #include <string.h>
 #include "dev/log.h"
 #include "exec/elf.h"
+#include "fcntl.h"
 #include "fs/fs.h"
 #include "types/list.h"
 
@@ -117,7 +118,7 @@ int k_load_modules() {
 
     __loaded_modules = list_create();
 
-	fs_node* mod_dir = k_fs_open("/modules", FS_O_DIR);
+	fs_node* mod_dir = k_fs_open("/modules", O_DIR);
 	if(!mod_dir) {
 		k_error("Failed to open /modules.");
 		return 1;

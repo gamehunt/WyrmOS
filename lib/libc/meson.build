@@ -17,6 +17,7 @@ user_srcs = [
   'wyrm/syscall.asm',
   'sys/mman.c',
   'signal.c',
+  'fcntl.c',
   'libc.c',
 ]
 

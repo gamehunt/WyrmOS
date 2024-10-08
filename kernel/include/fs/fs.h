@@ -15,9 +15,6 @@ typedef struct {
 	char name[FS_DIRENT_NAME_LENGTH];
 } dirent;
 
-#define FS_O_RW  (1 << 0)
-#define FS_O_DIR (1 << 1)
-
 struct _fs_node;
 typedef struct {
 	struct _fs_node*(*open)(struct _fs_node* root, path*, uint16_t flags);
