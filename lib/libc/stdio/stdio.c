@@ -1,9 +1,9 @@
 #include "fcntl.h"
+#include "unistd.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wyrm/syscall.h>
-#include <fs/fs.h>
 
 static FILE _stdin = {
     .fd     = 0,
@@ -92,7 +92,7 @@ FILE* fopen(const char* path, const char* access) {
 int fclose(FILE* fp) {
     int fd = fp->fd;
     free(fp);
-    return __sys_close(fd);
+    return close(fd);
 }
 
 int fseek(FILE *stream, long offset, int origin) {
@@ -112,11 +112,11 @@ int fprintf(FILE* stream, const char * format, ...) {
 }
 
 size_t fread(void* b, size_t s, size_t c, FILE* f) {
-    return __sys_read(f->fd, f->offset, c * s, (uintptr_t) b);
+    return read(f->fd, b, s * c);
 }
 
 size_t fwrite(const void* b, size_t s, size_t c, FILE* f) {
-    return __sys_write(f->fd, f->offset, c * s, (uintptr_t) b);
+    return write(f->fd, b, s * c);
 }
 
 void setbuf(FILE* f, char* b) {

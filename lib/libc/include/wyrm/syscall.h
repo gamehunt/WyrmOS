@@ -22,8 +22,8 @@ extern int __invoke_syscall(uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, 
 #define __sys_sleep(seconds, microseconds, rel) INVOKE_SYSCALL3(SYS_SLEEP, seconds, microseconds, rel)
 #define __sys_mmap(st, sz, fl, pr, fd, of)      INVOKE_SYSCALL6(SYS_MMAP, st, sz, fl, pr, fd, of)
 #define __sys_munmap(st, sz)                    INVOKE_SYSCALL2(SYS_MUNMAP, st, sz)
-#define __sys_read(fd, offs, size, buffer)      INVOKE_SYSCALL4(SYS_READ, fd, offs, size, buffer)
-#define __sys_write(fd, offs, size, buffer)     INVOKE_SYSCALL4(SYS_WRITE, fd, offs, size, buffer)
+#define __sys_read(fd, size, buffer)            INVOKE_SYSCALL3(SYS_READ, fd, size, buffer)
+#define __sys_write(fd, size, buffer)           INVOKE_SYSCALL3(SYS_WRITE, fd, size, buffer)
 #define __sys_close(fd)                         INVOKE_SYSCALL1(SYS_CLOSE, fd)
 #define __sys_open(path, flags)                 INVOKE_SYSCALL2(SYS_OPEN, (uintptr_t) path, flags)
 

@@ -19,8 +19,9 @@
 
 typedef struct {
     unsigned int id;
-    fs_node* node;
-} fd;
+    fs_node*     node;
+    off_t        offset;
+} fd_entry;
 
 typedef struct {
     uintptr_t handler;
@@ -72,28 +73,28 @@ static struct core __seg_gs * const current_core = 0;
 INTERNAL void     k_process_init();
 INTERNAL process* k_process_create_idle();
 
-process* k_process_get_ready();
-void     k_process_make_ready(process* p);
-process* k_process_create(const char* name);
-process* k_process_get_by_pid(pid_t pid);
-void     k_process_spawn(process* p, process* parent);
-pid_t    k_process_fork();
-void     k_process_switch(int flags);
-#define  k_process_yield() k_process_switch(SWITCH_RESCHEDULE);
-void     k_process_schedule_next();
-void     k_process_set_core(struct core* addr);
-void     k_process_exit(int code);
-int      k_process_open_file(fs_node* node);
-int      k_process_close_file(unsigned int fd);
-fs_node* k_process_get_file(unsigned int fd);
-int      k_process_send_signal(pid_t pid, int sig);
-int      k_process_handle_signal(int sig, regs* r);
-void     k_process_exit_signal(regs* r);
-void     k_process_invoke_signals(regs* r);
-void     k_process_update_timings();
+process*  k_process_get_ready();
+void      k_process_make_ready(process* p);
+process*  k_process_create(const char* name);
+process*  k_process_get_by_pid(pid_t pid);
+void      k_process_spawn(process* p, process* parent);
+pid_t     k_process_fork();
+void      k_process_switch(int flags);
+#define   k_process_yield() k_process_switch(SWITCH_RESCHEDULE);
+void      k_process_schedule_next();
+void      k_process_set_core(struct core* addr);
+void      k_process_exit(int code);
+int       k_process_open_file(fs_node* node);
+int       k_process_close_file(unsigned int fd);
+fd_entry* k_process_get_file(unsigned int fd);
+int       k_process_send_signal(pid_t pid, int sig);
+int       k_process_handle_signal(int sig, regs* r);
+void      k_process_exit_signal(regs* r);
+void      k_process_invoke_signals(regs* r);
+void      k_process_update_timings();
 
-void     k_process_sleep_on_queue(list* queue);
-void     k_process_wakeup_queue(list* queue);
-void     k_process_sleep(uint64_t seconds, uint64_t subseconds);
+void      k_process_sleep_on_queue(list* queue);
+void      k_process_wakeup_queue(list* queue);
+void      k_process_sleep(uint64_t seconds, uint64_t subseconds);
 
 #endif

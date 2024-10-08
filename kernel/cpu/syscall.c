@@ -12,26 +12,34 @@ static int sys_open(const char* path, int flags) {
     return k_process_open_file(node);
 }
 
-static int sys_write(unsigned int fd, size_t offset, size_t size, void* buffer) {
+static int sys_write(unsigned int fd, size_t size, void* buffer) {
     if(!validate_ptr(buffer, size)) {
         return -1;
     }
-    fs_node* node = k_process_get_file(fd);
+    fd_entry* node = k_process_get_file(fd);
     if(!node) {
         return -1;
     }
-    return k_fs_write(node, offset, size, buffer);
+    int32_t written = k_fs_write(node->node, node->offset, size, buffer);
+    if(written > 0) {
+        node->offset += written;
+    }
+    return written;
 }
 
-static int sys_read(unsigned int fd, size_t offset, size_t size, void* buffer) {
+static int sys_read(unsigned int fd, size_t size, void* buffer) {
     if(!validate_ptr(buffer, size)) {
         return -1;
     }
-    fs_node* node = k_process_get_file(fd);
+    fd_entry* node = k_process_get_file(fd);
     if(!node) {
         return -1;
     }
-    return k_fs_read(node, offset, size, buffer);
+    int32_t read = k_fs_read(node->node, node->offset, size, buffer);
+    if(read > 0) {
+        node->offset += read;
+    }
+    return read;
 }
 
 static int sys_fork() {

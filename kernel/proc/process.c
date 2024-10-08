@@ -257,7 +257,11 @@ int k_process_open_file(fs_node* node) {
         }
     }
     int s = current_core->current_process->fds->size;
-    list_push_back(current_core->current_process->fds, node);
+    fd_entry* f = malloc(sizeof(fd_entry));
+    f->id     = s;
+    f->node   = node;
+    f->offset = 0;
+    list_push_back(current_core->current_process->fds, f);
     return s;
 }
 
@@ -269,12 +273,14 @@ int k_process_close_file(unsigned int fd) {
     if(!_fd || !_fd->value) {
         return -1;
     }
-    k_fs_close(_fd->value);
+    fd_entry* f = _fd->value;
+    k_fs_close(f->node);
+    free(f);
     _fd->value = NULL;
     return 0;
 }
 
-fs_node* k_process_get_file(unsigned int fd) {
+fd_entry* k_process_get_file(unsigned int fd) {
     if(current_core->current_process->fds->size <= fd) {
         return NULL;
     } 
@@ -282,6 +288,7 @@ fs_node* k_process_get_file(unsigned int fd) {
     if(!_fd) {
         return NULL;
     }
+
     return _fd->value;
 }
 

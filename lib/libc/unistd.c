@@ -29,3 +29,15 @@ unsigned int sleep(unsigned int seconds) {
 int usleep(unsigned long usec) {
     return __sys_sleep(usec / 1000000, usec % 1000000, 1);
 }
+
+ssize_t read(int fd, void* buf, size_t count) {
+    return __sys_read(fd, count, (uintptr_t) buf);
+}
+
+ssize_t write(int fd, const void* buf, size_t count) {
+    return __sys_write(fd, count, (uintptr_t) buf);
+}
+
+int close(int fd) {
+    return __sys_close(fd);
+}
