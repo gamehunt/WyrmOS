@@ -1,9 +1,26 @@
 #ifndef __LIBC_WYRM_SYSCALL_H
 #define __LIBC_WYRM_SYSCALL_H 1
 
-#include <cpu/syscall.h>
 #include <stdint.h>
 
+#define SYS_OPEN    0 
+#define SYS_READ    1
+#define SYS_WRITE   2
+#define SYS_FORK    3
+#define SYS_EXIT    4
+#define SYS_GETPID  5
+#define SYS_KILL    6
+#define SYS_SIGNAL  7
+#define SYS_SLEEP   8
+#define SYS_MMAP    9
+#define SYS_MUNMAP  10
+#define SYS_CLOSE   11
+#define SYS_SEEK    12
+#define SYS_READDIR 13
+
+#define __SYS_TEST 0xFF
+
+#if !defined(__LIBK) && !defined(__KERNEL)
 extern int __invoke_syscall(uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, uintptr_t e, uintptr_t f, int number);
 
 #define INVOKE_SYSCALL0(n) __invoke_syscall(0, 0, 0, 0, 0, 0, n)
@@ -26,5 +43,10 @@ extern int __invoke_syscall(uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, 
 #define __sys_write(fd, size, buffer)           INVOKE_SYSCALL3(SYS_WRITE, fd, size, buffer)
 #define __sys_close(fd)                         INVOKE_SYSCALL1(SYS_CLOSE, fd)
 #define __sys_open(path, flags)                 INVOKE_SYSCALL2(SYS_OPEN, (uintptr_t) path, flags)
+#define __sys_seek(fd, off, origin)             INVOKE_SYSCALL3(SYS_SEEK, fd, off, origin)
+#define __sys_readdir(fd, index, out)           INVOKE_SYSCALL3(SYS_READDIR, fd, index, out)
+
+#endif
+
 
 #endif

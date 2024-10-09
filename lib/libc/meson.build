@@ -18,6 +18,7 @@ user_srcs = [
   'sys/mman.c',
   'signal.c',
   'fcntl.c',
+  'dirent.c',
   'libc.c',
 ]
 

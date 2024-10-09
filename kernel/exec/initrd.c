@@ -87,7 +87,7 @@ static uint8_t __starts_with(const char* pre, const char* post) {
 	return strncmp(pre, post, strlen(pre)) == 0;
 }
 
-static int __initrd_readdir(fs_node* root, dirent* dir, size_t index) {
+static int __initrd_readdir(fs_node* root, struct dirent* dir, size_t index) {
 	void* address = root->meta;
 	struct tar_header* root_header = address;
 	size_t c = 0;
@@ -105,7 +105,7 @@ static int __initrd_readdir(fs_node* root, dirent* dir, size_t index) {
 			if(c == index) {
 				path* p = path_parse(hdr->filename);
 				char* filename = path_filename(p);
-				strncpy(dir->name, filename, FS_DIRENT_NAME_LENGTH);
+				strncpy(dir->name, filename, DIRENT_NAME_LENGTH);
 				free(filename);
 				path_free(p);
 				return 1;

@@ -126,7 +126,7 @@ int k_load_modules() {
 
     list* to_load = list_create();
 
-	dirent dir;
+	struct dirent dir;
 	size_t index = 0;
 	while(k_fs_readdir(mod_dir, &dir, index)) {
 		path* p = path_parse("/modules");

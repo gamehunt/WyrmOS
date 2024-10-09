@@ -9,6 +9,8 @@
 #define CHEADER_END
 #endif
 
+#define UNIMPL fprintf(stderr, "%s:%d %s(): unimplemented", __FILE__, __LINE__, __FUNCTION__); abort();
+
 CHEADER_START
 CHEADER_END
 

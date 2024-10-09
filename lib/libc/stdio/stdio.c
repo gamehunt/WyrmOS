@@ -38,7 +38,7 @@ void __init_stdio() {
     _stdin.rbuf  = malloc(BUFSIZ); 
 }
 
-int fflush(FILE *stream) {
+int fflush(FILE* stream) {
     return 0;
 }
 
@@ -90,17 +90,24 @@ FILE* fopen(const char* path, const char* access) {
 }
 
 int fclose(FILE* fp) {
+    fflush(fp);
     int fd = fp->fd;
+    if(fp->rbuf) {
+        free(fp->rbuf);
+    }
+    if(fp->wbuf) {
+        free(fp->wbuf);
+    }
     free(fp);
     return close(fd);
 }
 
 int fseek(FILE *stream, long offset, int origin) {
-    return 0;
+    return __sys_seek(stream->fd, offset, origin);
 }
 
 long ftell(FILE* stream) {
-    return stream->offset;
+    return fseek(stream, 0, SEEK_CUR);
 }
 
 int fprintf(FILE* stream, const char * format, ...) {
@@ -111,6 +118,7 @@ int fprintf(FILE* stream, const char * format, ...) {
     return r;
 }
 
+// TODO buffering
 size_t fread(void* b, size_t s, size_t c, FILE* f) {
     return read(f->fd, b, s * c);
 }
@@ -137,4 +145,8 @@ void setbuf(FILE* f, char* b) {
 
 int feof(FILE* stream) {
     return stream->eof;
+}
+
+int fileno(FILE* stream) {
+    return stream->fd;
 }

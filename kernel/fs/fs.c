@@ -206,7 +206,7 @@ size_t k_fs_write(fs_node* node, size_t offset, size_t bytes, uint8_t* buffer) {
 	return 0;
 }
 
-int k_fs_readdir(fs_node* dir, dirent* dn, size_t index) {
+int k_fs_readdir(fs_node* dir, struct dirent* dn, size_t index) {
 	if(dir->ops.readdir) {
 		return dir->ops.readdir(dir, dn, index);
 	}

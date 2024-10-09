@@ -8,6 +8,8 @@
 #define EOF -1
 
 #define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
 
 CHEADER_START
 
@@ -26,6 +28,12 @@ typedef struct {
     int    eof;
 } FILE;
 
+typedef struct {
+	int  fd;
+	long index;
+} DIR;
+
+int     fileno(FILE *stream);
 int     feof(FILE *stream);
 int     fflush(FILE *stream);
 long    ftell(FILE *stream);

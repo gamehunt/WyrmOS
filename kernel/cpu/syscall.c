@@ -6,9 +6,15 @@
 #include "proc/process.h"
 #include <cpu/syscall.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <dirent.h>
+#include <wyrm/syscall.h>
 
 static int sys_open(const char* path, int flags) {
     fs_node* node = k_fs_open(path, flags);
+    if(!node) {
+        return -1;
+    }
     return k_process_open_file(node);
 }
 
@@ -40,6 +46,37 @@ static int sys_read(unsigned int fd, size_t size, void* buffer) {
         node->offset += read;
     }
     return read;
+}
+
+static int sys_seek(unsigned int fd, off_t offset, uint8_t origin) {
+	fd_entry* file = k_process_get_file(fd);
+	if(!file) {
+		return -1;
+	}
+	switch(origin) {
+		case SEEK_CUR:
+			file->offset += offset;
+			break;
+		case SEEK_SET:
+			file->offset = offset;
+			break;
+		case SEEK_END:
+			file->offset = file->node->size + offset;
+			break;
+	}
+
+	return file->offset;
+}
+
+static int sys_readdir(int fd, long index, struct dirent* out) {
+    if(!validate_ptr(out, sizeof(struct dirent))) {
+        return -1;
+    }
+    fd_entry* entr = k_process_get_file(fd);
+	if(!entr) {
+		return -1;
+	}
+	return k_fs_readdir(entr->node, out, index);
 }
 
 static int sys_fork() {
@@ -111,18 +148,20 @@ static int sys_munmap(uintptr_t start, size_t size) {
 
 typedef int (*syscall_handler)(uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, uintptr_t e, uintptr_t f);
 static const syscall_handler __syscall_table[] = {
-    [SYS_OPEN]   = (syscall_handler) sys_open,
-    [SYS_READ]   = (syscall_handler) sys_read,
-    [SYS_WRITE]  = (syscall_handler) sys_write,
-    [SYS_FORK]   = (syscall_handler) sys_fork,
-    [SYS_EXIT]   = (syscall_handler) sys_exit,
-    [SYS_GETPID] = (syscall_handler) sys_getpid,
-    [SYS_KILL]   = (syscall_handler) sys_kill,
-    [SYS_SIGNAL] = (syscall_handler) sys_signal,
-    [SYS_SLEEP]  = (syscall_handler) sys_sleep,
-    [SYS_MMAP]   = (syscall_handler) sys_mmap,
-    [SYS_MUNMAP] = (syscall_handler) sys_munmap,
-    [__SYS_TEST] = (syscall_handler) sys_test
+    [SYS_OPEN]    = (syscall_handler) sys_open,
+    [SYS_READ]    = (syscall_handler) sys_read,
+    [SYS_WRITE]   = (syscall_handler) sys_write,
+    [SYS_FORK]    = (syscall_handler) sys_fork,
+    [SYS_EXIT]    = (syscall_handler) sys_exit,
+    [SYS_GETPID]  = (syscall_handler) sys_getpid,
+    [SYS_KILL]    = (syscall_handler) sys_kill,
+    [SYS_SIGNAL]  = (syscall_handler) sys_signal,
+    [SYS_SLEEP]   = (syscall_handler) sys_sleep,
+    [SYS_MMAP]    = (syscall_handler) sys_mmap,
+    [SYS_MUNMAP]  = (syscall_handler) sys_munmap,
+    [SYS_SEEK]    = (syscall_handler) sys_seek,
+    [SYS_READDIR] = (syscall_handler) sys_readdir,
+    [__SYS_TEST]  = (syscall_handler) sys_test
 };
 
 static const size_t __syscall_amount = sizeof(__syscall_table) / sizeof(syscall_handler);

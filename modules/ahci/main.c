@@ -513,12 +513,13 @@ static void __init_port(HBA_MEM* mem, int _port) {
     char* serial = __fix_ata_string(ident->serial,  20);
 
     k_debug("%s %s %s", model, firmwr, serial);
-    k_debug("LBA28 size: %dMB", ident->sectors_28 / 512);
-    k_debug("LBA48 size: %dMB", ident->sectors_48 / 512);
+    k_debug("LBA28 size: %dMB", ident->sectors_28 / ATA_SECTOR_SIZE);
+    k_debug("LBA48 size: %dMB", ident->sectors_48 / ATA_SECTOR_SIZE);
 
     k_mem_free_dma(ident, 512);
 
     fs_node* node = __create_fsnode(__create_device(mem, _port));
+    node->size = (ident->sectors_48 ? ident->sectors_48 : ident->sectors_28) * ATA_SECTOR_SIZE;
 
 	list_push_back(__devices, node->meta);
 
