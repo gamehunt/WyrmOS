@@ -2,6 +2,7 @@
 #include <mem/mem.h>
 #include <mem/paging.h>
 #include <panic.h>
+#include "dev/log.h"
 #include "proc/spinlock.h"
 
 #include <assert.h>
@@ -16,10 +17,12 @@
 #define SLAB_SIZE(s) (1 << s)
 #define MAX_SLAB_SIZE SLAB_SIZE(MAX_SLAB)
 #define MIN_SLAB_SIZE SLAB_SIZE(MIN_SLAB)
+#define SLAB_MAGIC 0xDEADBEEF
 
 struct slab {
-	size_t  size;
-	void*   free;
+    uint32_t magic;
+	size_t   size;
+	void*    free;
 	struct slab* next;
 };
 
@@ -115,14 +118,13 @@ static struct slab* __try_get_big_free_slab(size_t size) {
 	}
 
 	struct slab* slab = free_slabs;
-
 	struct slab* head = NULL;
 	struct slab* tail = slab->next;
 
 	size_t found_size = 0;
 
+	struct slab* iterator = slab;
 	while(slab) {
-		struct slab* iterator = slab;
 		if(!found_size) {
 			found_size = PAGE_SIZE - sizeof(struct slab);
 		} else {
@@ -132,13 +134,12 @@ static struct slab* __try_get_big_free_slab(size_t size) {
 			tail = iterator->next;
 			break;
 		}
-		if((uintptr_t) iterator + PAGE_SIZE == (uintptr_t) iterator->next) {
-			iterator = iterator->next;
-		} else {
+		if((uintptr_t) iterator + PAGE_SIZE != (uintptr_t) iterator->next) {
 			head = slab;
 			slab = iterator->next;
 			found_size = 0;
 		}
+		iterator = iterator->next;
 	}
 
 	if(found_size >= size) {
@@ -155,7 +156,7 @@ static struct slab* __try_get_big_free_slab(size_t size) {
 
 static void __free_big_slab(struct slab* s) {
 	size_t real_size = s->size + sizeof(struct slab);
-	size_t slabs = (real_size) / PAGE_SIZE + !!(real_size % PAGE_SIZE);
+	size_t slabs = PAGES(real_size);
 	for(size_t slab = 0; slab < slabs; slab++) {
 		s->size = 0;
 		s->free = NULL;
@@ -187,6 +188,7 @@ static struct slab* __allocate_slab(uint8_t size) {
 	if(!s) {
 		s = __sbrk(1);
 	}
+    s->magic = SLAB_MAGIC;
 	s->size = size;
 	s->free = (void*) (((uintptr_t) s) + sizeof(struct slab));
 	size_t entries = ((PAGE_SIZE - sizeof(struct slab)) / SLAB_SIZE(size)) - 1;
@@ -204,8 +206,9 @@ static struct slab* __allocate_big_slab(size_t size) {
 	struct slab* s = __try_get_big_free_slab(size);
 	if(!s) {
 		size_t real_size = size + sizeof(struct slab);
-		s = __sbrk(real_size / PAGE_SIZE + !!(real_size % PAGE_SIZE));
-	}
+		s = __sbrk(PAGES(real_size));
+    }
+    s->magic = SLAB_MAGIC;
 	s->size = size;
 	s->free = (void*) (((uintptr_t) s) + sizeof(struct slab));
 	s->next = NULL;
@@ -217,7 +220,7 @@ static struct slab* __allocate_big_slab(size_t size) {
 struct slab* __get_slab(size_t bytes) {
 	uint8_t size  = __slab_for_size(bytes);
 	uint8_t index = __slab_index(size);
-	struct slab* r = __tail(slabs[index]);
+	struct slab* r = size == BIG_SLAB ? NULL : __tail(slabs[index]);
 	if(!r || !HAS_FREE_SPACE(r)) {
 		if(size == BIG_SLAB) {
 			r = __allocate_big_slab(bytes);
@@ -225,8 +228,8 @@ struct slab* __get_slab(size_t bytes) {
 			r = __allocate_slab(size);
 		}
 		__insert_slab(r);
-	} 	
-	return r;
+    } 	
+    return r;
 }
 
 void* __attribute__ ((malloc))  kmalloc(size_t bytes) {
@@ -239,7 +242,7 @@ void* __attribute__ ((malloc))  kmalloc(size_t bytes) {
 }
 
 void* __attribute__ ((malloc)) kmalloc_aligned(size_t bytes, size_t align) {
-	uintptr_t true_size = bytes + align - sizeof(struct slab);
+	size_t true_size = bytes + align - sizeof(struct slab);
 	void * result = kmalloc(true_size);
 	void * out = (void *)((uintptr_t)result + (align) - sizeof(struct slab));
 	assert((uintptr_t) out % align == 0);
@@ -253,7 +256,13 @@ void kfree(void* mem) {
 		mem = (void*) ((uintptr_t) mem - 1);
 	}
 
-	struct slab* s = (struct slab*) ((uintptr_t)mem & ~0xFFF);
+	struct slab* s = (struct slab*) ((uintptr_t)mem & (uintptr_t)~0xFFF);
+
+    assert((uintptr_t) s % PAGE_SIZE == 0);
+
+    if(s->magic != SLAB_MAGIC) {
+        panic(NULL, "Heap corruption: slab = %#.16lx", s);
+    }
 	
     LOCK(heap_lock);
 	if(s->size > MAX_SLAB) {

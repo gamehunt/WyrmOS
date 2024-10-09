@@ -1,5 +1,6 @@
 #include "dirent.h"
 #include "stdlib.h"
+#include "unistd.h"
 #include <stdio.h>
 
 int main(int argc, const char** argv) {
@@ -12,6 +13,10 @@ int main(int argc, const char** argv) {
         while((dent = readdir(d)) != NULL) {
             printf("%s\r\n", dent->name);
         }
+    }
+    if(!fork()) {
+        char* _argv[] = {"wsh", NULL};
+        execv("/bin/wsh", _argv);
     }
     while(1) { }
     return 0;

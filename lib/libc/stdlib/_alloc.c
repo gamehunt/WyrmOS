@@ -107,14 +107,13 @@ static struct slab* __try_get_big_free_slab(size_t size) {
 	}
 
 	struct slab* slab = free_slabs;
-
 	struct slab* head = NULL;
 	struct slab* tail = slab->next;
 
 	size_t found_size = 0;
 
+	struct slab* iterator = slab;
 	while(slab) {
-		struct slab* iterator = slab;
 		if(!found_size) {
 			found_size = PAGE_SIZE - sizeof(struct slab);
 		} else {
@@ -124,13 +123,12 @@ static struct slab* __try_get_big_free_slab(size_t size) {
 			tail = iterator->next;
 			break;
 		}
-		if((uintptr_t) iterator + PAGE_SIZE == (uintptr_t) iterator->next) {
-			iterator = iterator->next;
-		} else {
+		if((uintptr_t) iterator + PAGE_SIZE != (uintptr_t) iterator->next) {
 			head = slab;
 			slab = iterator->next;
 			found_size = 0;
 		}
+		iterator = iterator->next;
 	}
 
 	if(found_size >= size) {
@@ -208,7 +206,7 @@ static struct slab* __allocate_big_slab(size_t size) {
 struct slab* __get_slab(size_t bytes) {
 	uint8_t size  = __slab_for_size(bytes);
 	uint8_t index = __slab_index(size);
-	struct slab* r = __tail(slabs[index]);
+	struct slab* r = size == BIG_SLAB ? NULL : __tail(slabs[index]);
 	if(!r || !HAS_FREE_SPACE(r)) {
 		if(size == BIG_SLAB) {
 			r = __allocate_big_slab(bytes);
@@ -216,8 +214,8 @@ struct slab* __get_slab(size_t bytes) {
 			r = __allocate_slab(size);
 		}
 		__insert_slab(r);
-	} 	
-	return r;
+    } 	
+    return r;
 }
 
 void* __malloc(size_t bytes) {

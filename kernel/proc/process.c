@@ -131,7 +131,7 @@ static void* __k_process_alloc_kernel_stack() {
 static process* __k_process_create_init() {
 	process* prc = k_process_create("[init]");
     prc->flags   = PROCESS_RUNNING;
-	prc->ctx.pml = k_mem_paging_get_root_pml();
+	prc->ctx.pml = k_mem_paging_clone_pml(NULL);
 	return prc;
 }
 
@@ -180,6 +180,8 @@ void k_process_spawn(process* p, process* parent) {
 
 	if(parent) {
 		tree_append_child(parent->tree_node, p->tree_node);
+        
+        // p->fds = parent->fds; -- TODO clone fds
 	} 
 
 	list_append(__process_list, p->list_node);

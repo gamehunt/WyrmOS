@@ -17,7 +17,7 @@ int execv(const char* path, char* const argv[]) {
 }
 
 int execve(const char* path, char* const argv[], char* const envp[]) {
-    return 0;
+    return __sys_exec((uintptr_t) path, (uintptr_t) argv, (uintptr_t) envp);
 }
 
 int execvp(const char* path, char* const argv[]) {

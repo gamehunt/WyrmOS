@@ -209,6 +209,31 @@ int k_elf_exec(void* elf, int argc, const char** argv, char** envp) {
 		return -1;
 	}
 
+    int envc = 0;
+    if(envp) {
+        while(*(envp + envc)) {
+            envc++;
+        }
+    }
+
+    char** _argv_copy = malloc(sizeof(char*) * (argc + 1));
+    char** _envp_copy = malloc(sizeof(char*) * (envc + 1));
+
+    for(int i = 0; i < argc; i++) {
+        _argv_copy[i] = strdup(argv[i]);
+    }
+    _argv_copy[argc] = NULL;
+
+    for(int i = 0; i < envc; i++) {
+        _envp_copy[i] = strdup(envp[i]);
+    }
+    _envp_copy[envc] = NULL;
+
+    union page* cur = current_core->current_process->ctx.pml;
+    current_core->current_process->ctx.pml = k_mem_paging_clone_pml(NULL);
+    k_mem_paging_set_pml(current_core->current_process->ctx.pml);
+    k_mem_paging_free_pml(cur);
+
 	phdr64*   phdr = elf + header->e_phoff;
     uintptr_t exec_end = 0;
 	for(size_t i = 0; i < header->e_phnum; i++) {
@@ -239,8 +264,6 @@ int k_elf_exec(void* elf, int argc, const char** argv, char** envp) {
 
     free(elf);
 
-    current_core->current_process->ctx.pml = k_mem_paging_clone_pml(NULL);
-    k_mem_paging_set_pml(current_core->current_process->ctx.pml);
     k_mem_paging_map_pages_ex(exec_end, PAGES(USER_STACK_SIZE), 0, PM_FL_USER | PM_FL_WRITABLE);
 
     k_debug("Allocated %dB user stack at %#.16lx", USER_STACK_SIZE, exec_end);
@@ -253,8 +276,8 @@ int k_elf_exec(void* elf, int argc, const char** argv, char** envp) {
     tmp[argc] = NULL;
     for(int i = argc - 1; i >= 0; i--) {
         PUSH(user_stack, char, '\0');
-        for(int j = strlen(argv[i]) - 1; j >= 0; j--) {
-            PUSH(user_stack, char, argv[i][j]);
+        for(int j = strlen(_argv_copy[i]) - 1; j >= 0; j--) {
+            PUSH(user_stack, char, _argv_copy[i][j]);
         }
         tmp[i] = (char*) user_stack;
     }
@@ -264,19 +287,14 @@ int k_elf_exec(void* elf, int argc, const char** argv, char** envp) {
     argv_pointer = (const char**) user_stack;
 
     char** envp_pointer;
-    int envc = 0;
-    if(envp) {
-        while(*(envp + envc)) {
-            envc++;
-        }
-    }
+
     char* tmp_env[envc + 1];
     tmp_env[envc] = NULL;
-    if(envp) {
+    if(envc) {
         for(int i = envc - 1; i >= 0; i--) {
             PUSH(user_stack, char, '\0');
-            for(int j = strlen(envp[i]) - 1; j >= 0; j--) {
-                PUSH(user_stack, char, envp[i][j]);
+            for(int j = strlen(_envp_copy[i]) - 1; j >= 0; j--) {
+                PUSH(user_stack, char, _envp_copy[i][j]);
             }
             tmp_env[i] = (char*) user_stack;
         }
@@ -285,6 +303,15 @@ int k_elf_exec(void* elf, int argc, const char** argv, char** envp) {
         PUSH(user_stack, char*, tmp_env[i]);
     }
     envp_pointer = (char**) user_stack;
+
+    for(int i = 0 ; i < argc; i++) {
+        free(_argv_copy[i]);
+    }
+    free(_argv_copy);
+    for(int i = 0; i < envc; i++) {
+        free(_envp_copy[i]);
+    }
+    free(_envp_copy);
 
     user_stack = ALIGN(user_stack, 16);
     
