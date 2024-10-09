@@ -14,6 +14,7 @@ user_srcs = [
   'unistd.c',
   'stdio/stdio.c',
   'stdlib/_alloc.c',
+  'stdlib/env.c',
   'wyrm/syscall.asm',
   'sys/mman.c',
   'signal.c',

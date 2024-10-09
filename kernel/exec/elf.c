@@ -245,9 +245,51 @@ int k_elf_exec(void* elf, int argc, const char** argv, char** envp) {
 
     k_debug("Allocated %dB user stack at %#.16lx", USER_STACK_SIZE, exec_end);
     k_debug("Entry: %#.16lx", header->e_entry);
+
+    uintptr_t user_stack = exec_end + USER_STACK_SIZE;
+
+    const char** argv_pointer;
+    char* tmp[argc + 1];
+    tmp[argc] = NULL;
+    for(int i = argc - 1; i >= 0; i--) {
+        PUSH(user_stack, char, '\0');
+        for(int j = strlen(argv[i]) - 1; j >= 0; j--) {
+            PUSH(user_stack, char, argv[i][j]);
+        }
+        tmp[i] = (char*) user_stack;
+    }
+    for(int i = argc; i >= 0; i--) {
+        PUSH(user_stack, char*, tmp[i]);
+    }
+    argv_pointer = (const char**) user_stack;
+
+    char** envp_pointer;
+    int envc = 0;
+    if(envp) {
+        while(*(envp + envc)) {
+            envc++;
+        }
+    }
+    char* tmp_env[envc + 1];
+    tmp_env[envc] = NULL;
+    if(envp) {
+        for(int i = envc - 1; i >= 0; i--) {
+            PUSH(user_stack, char, '\0');
+            for(int j = strlen(envp[i]) - 1; j >= 0; j--) {
+                PUSH(user_stack, char, envp[i][j]);
+            }
+            tmp_env[i] = (char*) user_stack;
+        }
+    }
+    for(int i = envc; i >= 0; i--) {
+        PUSH(user_stack, char*, tmp_env[i]);
+    }
+    envp_pointer = (char**) user_stack;
+
+    user_stack = ALIGN(user_stack, 16);
     
     k_mem_set_kernel_stack((uintptr_t) current_core->current_process->ctx.kernel_stack);
-	arch_user_jmp_exec(argc, argv, envp, header->e_entry, exec_end + USER_STACK_SIZE);
+	arch_user_jmp_exec(argc, argv_pointer, envp_pointer, header->e_entry, user_stack);
 
     return -1;
 }

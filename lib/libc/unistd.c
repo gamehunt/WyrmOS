@@ -1,5 +1,7 @@
 #include <cpu/syscall.h>
 #include "wyrm/syscall.h"
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 pid_t getpid() {
@@ -11,7 +13,7 @@ int fork() {
 }
 
 int execv(const char* path, char* const argv[]) {
-    return 0;
+    return execve(path, argv, NULL);
 }
 
 int execve(const char* path, char* const argv[], char* const envp[]) {
@@ -19,7 +21,8 @@ int execve(const char* path, char* const argv[], char* const envp[]) {
 }
 
 int execvp(const char* path, char* const argv[]) {
-    return 0;
+    // TODO parse path
+    return execve(path, argv, NULL);
 }
 
 unsigned int sleep(unsigned int seconds) {

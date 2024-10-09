@@ -1,8 +1,9 @@
 #include "dirent.h"
+#include "stdlib.h"
 #include <stdio.h>
 
-int main() {
-    printf("Welcome to WyrmOS!\r\n");
+int main(int argc, const char** argv) {
+    printf("Welcome to WyrmOS! %s\r\n", argv[0]);
     DIR* d = opendir("/modules");
     if(!d) {
         printf("Failed to open dir.");
@@ -12,7 +13,6 @@ int main() {
             printf("%s\r\n", dent->name);
         }
     }
-    while(1) { 
-    }
+    while(1) { }
     return 0;
 }

@@ -79,7 +79,8 @@ void kernel_main(void) {
 	k_load_modules();
 	k_process_init();
 
-	int r = k_exec("/bin/init", 0, NULL, NULL);
+    const char* argv[] = {"/bin/init", NULL};
+	int r = k_exec("/bin/init", 1, argv, NULL);
 	if(r != 0) {
 		panic(NULL, "Failed to execute init process");
 	}

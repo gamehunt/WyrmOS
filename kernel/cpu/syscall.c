@@ -1,5 +1,6 @@
 #include "arch.h"
 #include "dev/log.h"
+#include "exec/exec.h"
 #include "fs/fs.h"
 #include "mem/mmap.h"
 #include "mem/paging.h"
@@ -123,6 +124,16 @@ static int sys_sleep(uint64_t seconds, uint64_t subseconds, int relative) {
     return 0;
 }
 
+static int sys_exec(const char* path, const char* argv[], char* envp[]) {
+    int argc = 0;
+    if(argv) {
+        while(*(argv + argc)) {
+            argc++;
+        }
+    }
+    return k_exec(path, argc, argv, envp);
+}
+
 static int sys_test() {
     k_debug("Test");
     return 0;
@@ -161,6 +172,7 @@ static const syscall_handler __syscall_table[] = {
     [SYS_MUNMAP]  = (syscall_handler) sys_munmap,
     [SYS_SEEK]    = (syscall_handler) sys_seek,
     [SYS_READDIR] = (syscall_handler) sys_readdir,
+    [SYS_EXEC]    = (syscall_handler) sys_exec,
     [__SYS_TEST]  = (syscall_handler) sys_test
 };
 

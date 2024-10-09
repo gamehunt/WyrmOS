@@ -9,7 +9,11 @@ CHEADER_START
 #if !defined(__LIBK) && !defined(__KERNEL)
 int   atexit(void (*)(void));
 char* getenv(const char*);
+int   setenv(const char *name, const char *value, int overwrite);
+int   unsetenv(const char *name);
+int   putenv(char *string);
 void __attribute__((noreturn)) exit(int exit_code);
+extern char** environ;
 #endif
 
 int  abs(int n);

@@ -71,7 +71,4 @@ void __attribute__((noreturn)) exit(int code) {
     __sys_exit(code);
 }
 
-char* getenv(const char* env) {
-    return "";
-}
 #endif
