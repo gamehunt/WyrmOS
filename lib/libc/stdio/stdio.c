@@ -7,7 +7,8 @@
 
 static FILE _stdin = {
     .fd     = 0,
-    .offset = 0,
+    .roffs  = 0,
+    .woffs  = 0,
     .rbuf = NULL,
     .wbuf = NULL,
     .bufsz = BUFSIZ,
@@ -15,7 +16,8 @@ static FILE _stdin = {
 
 static FILE _stdout = {
     .fd     = 1,
-    .offset = 0,
+    .roffs  = 0,
+    .woffs  = 0,
     .rbuf = NULL,
     .wbuf = NULL,
     .bufsz = BUFSIZ,
@@ -23,7 +25,8 @@ static FILE _stdout = {
 
 static FILE _stderr = {
     .fd = 2,
-    .offset = 0,
+    .roffs  = 0,
+    .woffs  = 0,
     .rbuf = NULL,
     .wbuf = NULL,
     .bufsz = 0,
@@ -39,7 +42,15 @@ void __init_stdio() {
 }
 
 int fflush(FILE* stream) {
-    return 0;
+	if(!stream->wbuf) {
+		return 0;
+	}
+	if(stream->woffs) {
+		uint32_t result = write(stream->fd, stream->wbuf, stream->woffs);
+		stream->woffs = 0;
+		return result;
+	}
+  	return 0;
 }
 
 static int __flags(const char* access) {
@@ -78,15 +89,22 @@ static int __flags(const char* access) {
     }
 }
 
+FILE* fdopen(int fildes, const char *mode) {
+  FILE* file   = calloc(1, sizeof(FILE));
+  file->fd     = fildes;
+  file->wbuf   = malloc(BUFSIZ);
+  file->rbuf   = malloc(BUFSIZ);
+  file->bufsz  = BUFSIZ;
+  return file;
+}
+
 FILE* fopen(const char* path, const char* access) {
     int flags = __flags(access);
     if(flags == -1) {
         return NULL;
     }
     int fd = open(path, flags);
-    FILE* f = calloc(1, sizeof(FILE));
-    f->fd = fd;
-    return f;
+    return fdopen(fd, access);
 }
 
 int fclose(FILE* fp) {
@@ -103,7 +121,21 @@ int fclose(FILE* fp) {
 }
 
 int fseek(FILE *stream, long offset, int origin) {
-    return __sys_seek(stream->fd, offset, origin);
+   	if(stream->roffs && origin == SEEK_CUR) {
+		offset += stream->rloffs + stream->roffs;
+		origin = SEEK_SET;	
+	}
+
+	if(stream->woffs){
+		fflush(stream);
+	}
+
+	stream->roffs = 0;
+	stream->woffs = 0;
+	stream->available = 0;
+	stream->eof       = 0;
+
+	return __sys_seek(stream->fd, offset, origin);
 }
 
 long ftell(FILE* stream) {
@@ -118,13 +150,64 @@ int fprintf(FILE* stream, const char * format, ...) {
     return r;
 }
 
-// TODO buffering
 size_t fread(void* b, size_t s, size_t c, FILE* f) {
-    return read(f->fd, b, s * c);
+    size_t len = s * c;
+	size_t read_bytes = 0;
+	char* buf = (char*) b;
+	if(!f->rbuf) {
+		return read(f->fd, buf, len);
+	}
+	while(len > 0) {
+		if(!f->available) {
+			if(f->rbufoffs == f->bufsz) {
+				f->rbufoffs = 0;
+			}
+
+			f->rloffs  = fseek(f, 0, SEEK_CUR);
+			int r = read(f->fd, &f->rbuf[f->rbufoffs], f->bufsz - f->rbufoffs);
+
+			if(r < 0){
+				break;
+			} else {
+				f->roffs     = f->rbufoffs;
+				f->rbufoffs += r;
+				f->available = r;
+			}
+		}
+
+		if(f->available) {
+            size_t to_copy = (len > f->available ? f->available : len);
+            memcpy(buf, f->rbuf + f->roffs, to_copy);
+            f->roffs     += to_copy;
+            f->available -= to_copy;
+            buf += to_copy;
+            len -= to_copy;
+            read_bytes += to_copy;
+		} else {
+			f->eof = 1;
+			break;
+		}
+	}
+	return read_bytes;
 }
 
 size_t fwrite(const void* b, size_t s, size_t c, FILE* f) {
-    return write(f->fd, b, s * c);
+   	uint32_t len = s * c;
+	uint32_t written = len;
+	char* buf = (char*) b;
+	if(!f->wbuf) {
+		return write(f->fd, buf, len);
+    } else {
+	    while(len > 0) {
+	    	f->wbuf[f->woffs++] = *buf;
+	    	if(f->woffs == f->bufsz || (*buf == '\n')) {
+	    		fflush(f);
+	    	}
+	    	buf++;
+	    	len--;
+	    }
+    }
+	return written; 
 }
 
 void setbuf(FILE* f, char* b) {
@@ -149,4 +232,66 @@ int feof(FILE* stream) {
 
 int fileno(FILE* stream) {
     return stream->fd;
+}
+
+void clearerr(FILE *stream) {
+	stream->eof = 0;
+}
+
+char fgetc(FILE* s) {
+	char r;
+	size_t read = fread(&r, 1, 1, s);
+	if(read == 0) {
+		s->eof = 1;
+		return EOF;
+	}
+	return r;
+}
+
+int fputc(int ch, FILE *stream) {
+	size_t written = fwrite(&ch, 1, 1, stream);
+	if(written == 0) {
+		stream->eof = 1;
+		return EOF;
+	}
+	return ch;
+}
+
+char*  fgets(char* s, int size, FILE* stream) {
+	if(size <= 1) {
+		return NULL;
+	}
+
+	char* ptr = s;
+	char  c;
+
+	size -= 1;
+
+	while((c = fgetc(stream)) != EOF) {
+		*s = c;
+		s++;
+		size--;
+		if(!size || c == '\n') {
+			*s = '\0';
+			return ptr;
+		}
+	}
+
+	if(c == EOF) {
+		if(ptr == s) {
+			return NULL;
+		} else {
+			return ptr;
+		}
+	}
+
+	return NULL;
+}
+
+void rewind(FILE* stream) {
+	fseek(stream, 0, SEEK_SET);
+	stream->rbufoffs = 0;
+	stream->available = 0;
+	stream->eof = 0;
+	stream->ungetc = 0;
 }

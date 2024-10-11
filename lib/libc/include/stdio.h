@@ -20,12 +20,17 @@ CHEADER_START
 #define BUFSIZ 8192
 
 typedef struct {
-    int    fd;
-    off_t  offset;
-    char*  rbuf;
-    char*  wbuf;
-    size_t bufsz;
-    int    eof;
+    int       fd;
+    char*     rbuf;
+    char*     wbuf;
+    size_t    available;
+    size_t    bufsz;
+    size_t    roffs;
+    size_t    woffs;
+    size_t    rloffs;
+    size_t    rbufoffs;
+    int       eof;
+    char      ungetc;
 } FILE;
 
 typedef struct {
@@ -33,18 +38,23 @@ typedef struct {
 	long index;
 } DIR;
 
-int     fileno(FILE *stream);
-int     feof(FILE *stream);
-int     fflush(FILE *stream);
-long    ftell(FILE *stream);
-FILE*   fopen(const char*, const char*);
-int     fclose(FILE *fp);
-int     fseek(FILE *stream, long offset, int origin);
-int     vfprintf(FILE*, const char*, va_list);
-int     fprintf(FILE * stream, const char * format, ...);
-size_t  fread(void*, size_t, size_t, FILE*);
-size_t  fwrite(const void*, size_t, size_t, FILE*);
-void    setbuf(FILE*, char*);
+int    fileno(FILE *stream);
+void   clearerr(FILE *stream);
+int    feof(FILE *stream);
+int    fflush(FILE *stream);
+long   ftell(FILE *stream);
+FILE*  fopen(const char*, const char*);
+int    fclose(FILE *fp);
+int    fseek(FILE *stream, long offset, int origin);
+int    vfprintf(FILE*, const char*, va_list);
+int    fprintf(FILE * stream, const char * format, ...);
+size_t fread(void*, size_t, size_t, FILE*);
+size_t fwrite(const void*, size_t, size_t, FILE*);
+void   setbuf(FILE*, char*);
+char*  fgets(char* s, int size, FILE* stream);
+int    fputc(int ch, FILE *stream);
+char   fgetc(FILE* s);
+void   rewind(FILE* stream);
 
 extern FILE* stdout;
 extern FILE* stdin;
