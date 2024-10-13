@@ -59,9 +59,49 @@ typedef struct {
 }__attribute__ ((packed)) acpi_mcfg;
 
 typedef struct {
-    acpi_header header;
-    uint32_t    lapic;
-    uint32_t    flags;
+    uint8_t type;
+    uint8_t len;
+    uint8_t data[];
+}__attribute__((packed)) acpi_madt_entry;
+
+typedef struct {
+    uint8_t  id;
+    uint8_t  apic_id;
+    uint32_t flags;
+}__attribute__((packed)) acpi_madt_lapic;
+
+typedef struct {
+    uint8_t  id;
+    uint8_t  resv;
+    uint32_t addr;
+    uint32_t int_base;
+}__attribute__((packed)) acpi_madt_ioapic;
+
+typedef struct {
+    uint8_t  bus;
+    uint8_t  irq;
+    uint32_t int_base;
+    uint16_t flags; 
+}__attribute__((packed)) acpi_madt_ioapic_iso;
+
+
+typedef struct {
+    uint8_t  id;
+    uint16_t flags; 
+    uint8_t  lint;
+}__attribute__((packed)) acpi_madt_ioapic_nmi;
+
+typedef struct {
+    uint8_t  nmi;
+    uint8_t  resv;
+    uint16_t flags; 
+    uint32_t int_base;
+}__attribute__((packed)) acpi_madt_ioapic_nmi_src;
+
+typedef struct {
+    acpi_header     header;
+    uint32_t        lapic;
+    uint32_t        flags;
 }__attribute__ ((packed)) acpi_madt;
 
 acpi_header* k_dev_acpi_find_table(const char* table);

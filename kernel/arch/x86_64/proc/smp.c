@@ -11,13 +11,18 @@
 #include "proc/process.h"
 #include "assert.h"
 
+#define IOAPICID          0x00
+#define IOAPICVER         0x01
+#define IOAPICARB         0x02
+
 __attribute__((used, section(".requests")))
 static volatile struct limine_smp_request cores_request = {
     .id = LIMINE_SMP_REQUEST,
     .revision = 0
 };
 
-static uintptr_t __lapic_addr = 0;
+uintptr_t __lapic_addr  = 0;
+uintptr_t __ioapic_addr = 0;
 static volatile int __ap_flag = 0;
 
 static void __apic_tick(regs* r) {
@@ -113,6 +118,77 @@ static int __try_mp() {
     return 0;
 }
 
+
+static void __ioapic_write(uintptr_t base, uint8_t offset, uint32_t value) {
+    *(volatile uint32_t*)(base)        = offset;
+    *(volatile uint32_t*)(base + 0x10) = value;
+}
+
+static uint32_t __ioapic_read(uintptr_t base, uint8_t offset) {
+    *(volatile uint32_t*)(base) = offset;
+    return *(volatile uint32_t*)(base + 0x10);
+}
+
+static void __init_ioapic(acpi_madt_ioapic* entry) {
+    __ioapic_addr = (uintptr_t) k_mem_iomap(entry->addr, 0xFF);
+
+    k_debug("Mapped IOAPIC %d (base %d) to %#.16lx", entry->id, entry->int_base, __ioapic_addr);
+
+    uint32_t ver = __ioapic_read(__ioapic_addr, IOAPICVER);
+
+    uint8_t act_ver = ver & 0xFF;
+    uint8_t irqs    = (ver >> 16) & 0xFF;
+    k_debug("Version: %x, IRQS: %d", act_ver, irqs + 1);
+
+    // TODO make proper IOAPIC tracking, not hardcoded one
+}
+
+static void __ioapic_redir(uint8_t irq, uint8_t redir) {
+    __ioapic_write(__ioapic_addr, 0x10 + 2 * redir, IRQ_TO_INT(irq) | ((irq == 0) << 16));
+    __ioapic_write(__ioapic_addr, 0x10 + 2 * redir + 1, 0);
+}
+
+static void __find_ioapic(acpi_madt* madt) {
+    size_t entries_size = madt->header.length - sizeof(acpi_madt);
+    size_t parsed_size = 0;
+    while(entries_size > parsed_size) {
+        acpi_madt_entry* en = ((void*) madt) + sizeof(acpi_madt) + parsed_size;
+        k_debug("MADT: type=%d, len=%d", en->type, en->type);
+        switch(en->type) {
+            case 0:
+                k_debug("-- LAPIC: %#x", ((acpi_madt_lapic*) en->data)->apic_id);
+                break;
+            case 1:
+                k_debug("-- I/O APIC: %#.8x %d", 
+                        ((acpi_madt_ioapic*) en->data)->addr, 
+                        ((acpi_madt_ioapic*) en->data)->int_base);
+                __init_ioapic((void*) en->data);
+                break;
+            case 2:
+                k_debug("-- I/O APIC ISO: %d -> %d", 
+                        ((acpi_madt_ioapic_iso*) en->data)->irq,
+                        ((acpi_madt_ioapic_iso*) en->data)->int_base);
+                __ioapic_redir( 
+                        ((acpi_madt_ioapic_iso*) en->data)->irq, 
+                        ((acpi_madt_ioapic_iso*) en->data)->int_base);
+                break;
+            case 3:
+                k_debug("-- I/O APIC NMI SRC: %d %d", 
+                        ((acpi_madt_ioapic_nmi_src*) en->data)->nmi,
+                        ((acpi_madt_ioapic_nmi_src*) en->data)->int_base);
+                break;
+            case 4:
+                k_debug("-- I/O APIC NMI: %x %d", 
+                        ((acpi_madt_ioapic_nmi*) en->data)->id,
+                        ((acpi_madt_ioapic_nmi*) en->data)->lint);
+                break;
+            default:
+                k_warn(" -- Unknown!");
+        }
+        parsed_size += en->len;
+    } 
+}
+
 void k_proc_init_cores() {
     acpi_madt* madt = (acpi_madt*) k_dev_acpi_find_table("APIC"); 
     if(!madt) {
@@ -122,6 +198,8 @@ void k_proc_init_cores() {
 
     __lapic_addr = (uintptr_t) k_mem_iomap(madt->lapic, PAGE_SIZE);
     k_debug("Mapped LAPIC to %#.16lx", __lapic_addr);
+
+    __find_ioapic(madt); 
 
     if(__try_bootloader()) {
         return;
@@ -161,5 +239,5 @@ void lapic_send_ipi(int id, uint32_t ipi) {
 }
 
 void lapic_eoi() {
-    lapic_write(0xB0, 0);
+    lapic_write(0xB0, 0x0);
 }

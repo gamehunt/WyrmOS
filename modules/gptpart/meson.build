@@ -2,7 +2,7 @@ srcs = [
   'main.c',
 ]
 
-ata_mod = executable('ata', 
+gptpart_mod = executable('gptpart', 
   sources: srcs,
   include_directories: [includes, kernel_includes],
   c_args: [
@@ -14,7 +14,7 @@ ata_mod = executable('ata',
     '-nostdlib',
   ],
   dependencies: [libc_h_dep],
-  install: false,
+  install: true,
   install_dir: 'initrd/modules',
   name_prefix: '',
   name_suffix: 'wrm'

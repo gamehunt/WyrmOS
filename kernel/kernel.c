@@ -76,8 +76,8 @@ void kernel_main(void) {
 
 	k_fs_mount("/", "/dev/ram0", "initrd");
 
-	k_load_modules();
 	k_process_init();
+	k_load_modules();
 
     const char* argv[] = {"/bin/init", NULL};
 	int r = k_exec("/bin/init", 1, argv, NULL);

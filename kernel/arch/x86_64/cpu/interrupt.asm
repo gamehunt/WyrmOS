@@ -27,12 +27,20 @@ align 4
 %%skip:
 %endmacro
 
+extern __lapic_addr
+%macro lapic_eoi 0
+    push r12
+    mov  r12, [rel __lapic_addr]
+    add  r12, 0xB0
+    mov dword [r12], 0
+    pop  r12
+%endmacro
+
 global __syscall_stub
 __syscall_stub:
     push 0x0
     push 0x80
     jmp  interrupt_stub
-
 
 ISR 	0
 ISR 	1
@@ -88,10 +96,10 @@ ISR 	45
 ISR 	46
 ISR 	47 ; 16
 
-extern lapic_eoi
 global isr123 ; APIC tick
 isr123:
-    call lapic_eoi
+    lapic_eoi
+
     push 0x0
     push 123
     jmp interrupt_stub

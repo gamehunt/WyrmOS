@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <types/list.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -185,7 +186,7 @@ list_node* list_find_cmp(list* l, void* v, comparator cmp) {
 }
 
 void list_swap(list_node* a, list_node* b) {
-    assert(a->owner == b->owner);
+    assert(a->owner != NULL && a->owner == b->owner);
     if(a->prev) {
         a->prev->next = b;
     }
@@ -218,6 +219,12 @@ void list_swap(list_node* a, list_node* b) {
     }
 }
 
+void list_swap_values(list_node* a, list_node* b) {
+    void* tmp = a->value;
+    a->value  = b->value;
+    b->value  = tmp;
+}
+
 void list_sort_cmp(list* list, comparator cmp) {
     if(list->size == 0) {
         return;
@@ -226,7 +233,7 @@ void list_sort_cmp(list* list, comparator cmp) {
     while(a != NULL) {
         list_node* b = a;
         while(b->prev && cmp(b->prev->value, b->value) > 0) {
-            list_swap(b->prev, b);
+            list_swap_values(b->prev, b);
             b = b->prev;
         }
         a = a->next;

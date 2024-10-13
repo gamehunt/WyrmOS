@@ -110,6 +110,10 @@ void __dispatch_interrupt(regs* r) {
 		panic(r, "Invalid interrupt: %d", r->int_no);
 	}
 
+    if(r->int_no == 39) {
+        goto end;
+    }
+
 	if(!handlers[r->int_no]) {
 		if(IS_IRQ(r->int_no)) {
 			IRQ_ACK(INT_TO_IRQ(r->int_no));
@@ -125,6 +129,7 @@ void __dispatch_interrupt(regs* r) {
 	    handlers[r->int_no](r);
     } 
 
+end:
     if(current_core->current_process && r->cs != 0x08) {
         k_process_invoke_signals(r);
     }

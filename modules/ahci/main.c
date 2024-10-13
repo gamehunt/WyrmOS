@@ -4,6 +4,7 @@
 #include "symbols.h"
 #include "mem/pmm.h"
 #include "types/list.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -275,9 +276,9 @@ typedef struct {
 
 typedef struct {
 	HBA_MEM*  memory;
-    int   port;
-	list* waiters;
-    list* cmd_waiters;
+    int       port;
+	list*     waiters;
+    list*     cmd_waiters;
 } ahci_device;
 
 #define ncs(port) ((uint8_t)(port->cap >> 8) & 0xF)
@@ -523,6 +524,8 @@ static void __init_port(HBA_MEM* mem, int _port) {
 
 	list_push_back(__devices, node->meta);
 
+    port->ie = 0x7dc000ff; // Enable all interrupts
+
     char path[32] = {0};
     snprintf(path, 32, "/dev/%s", node->name);
     k_fs_mount_node(path, node);
@@ -608,8 +611,6 @@ static size_t __ahci_read_sectors(ahci_device* device, size_t start, size_t sect
 
 	port->ci = 1 << slot; // Issue command
 
-    k_debug("Command sent.");
-
     while(port->ci & (1 << slot)) {
 	    k_process_sleep_on_queue(device->waiters);
         if(port->is & (1 << 5)) {
@@ -665,7 +666,7 @@ static void __try_init_ahci(pci_device* dev) {
     uint16_t cmd = k_dev_pci_read_word(dev->address, PCI_W_COMMAND);
     cmd |= (1 << 1);  // Memory space
     cmd |= (1 << 2);  // Bus master
-    cmd ^= (1 << 10); // Interrupt enable
+    cmd &= ~(1 << 10); // Interrupt enable
     k_dev_pci_write_word(dev->address, PCI_W_COMMAND, cmd);
 
     uint8_t  intr = k_dev_pci_read_byte(dev->address, PCI_B_INT_LINE);
@@ -684,7 +685,7 @@ static void __try_init_ahci(pci_device* dev) {
                                     (mem->vs) & 0xFF
     );
 
-    mem->ghc |= (1 << 31); // AHCI enable
+    mem->ghc |= (1 << 1) | (1 << 31); // AHCI enable & INT enable
 
     for(int i = 0; i < 32; i++) {
         if(!(mem->pi & (1 << i))) {

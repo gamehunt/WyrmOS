@@ -1,4 +1,5 @@
 subdir('ata')
 subdir('ahci')
+subdir('gptpart')
 subdir('test')
 subdir('video')

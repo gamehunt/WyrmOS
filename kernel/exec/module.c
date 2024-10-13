@@ -72,6 +72,7 @@ static int8_t __scope_comparator(struct module_info* a, const char* scope) {
         if(!strcmp(*scopes, scope)) {
             return 0;
         }
+        scopes++;
     }
     return -1;
 }
@@ -113,6 +114,10 @@ static int __load_recursive(list_node* node, list* cache) {
     return r;
 }
 
+static int __modname_comparator(struct module_info* a, struct module_info* b) {
+    return strcmp(a->name, b->name);
+}
+
 int k_load_modules() {
 	k_debug("Loading modules...");
 
@@ -140,6 +145,8 @@ int k_load_modules() {
 		path_free(p);
 		index++;
 	}
+
+    list_sort_cmp(to_load, (void*) __modname_comparator);
 
     while(to_load->head) {
         __load_recursive(to_load->head, to_load);

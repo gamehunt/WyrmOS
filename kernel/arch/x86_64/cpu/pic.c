@@ -43,6 +43,10 @@ void k_cpu_pic_init() {
 	/* Request 8086 mode on each PIC */
 	OUTB(PIC1_DATA, 0x01); 
 	OUTB(PIC2_DATA, 0x01); 
+
+    // Mask everything
+    OUTB(PIC1_DATA, 0xFF);
+    OUTB(PIC2_DATA, 0xFF);
 }
 
 void k_cpu_pic_irq_ack(uint8_t irq) {

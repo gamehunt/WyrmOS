@@ -417,13 +417,13 @@ void k_process_update_timings() {
 
 void k_process_sleep_on_queue(list* queue) {
     if(is_locked(current_core->current_process)) {
-        k_process_switch(0);
-        return;
+        goto end;
     }
     LOCK(__block_lock);
     current_core->current_process->flags = PROCESS_SLEEPING;
     list_append(queue, current_core->current_process->sleep_node);
     UNLOCK(__block_lock);
+end:
     k_process_switch(0);
 }
 
