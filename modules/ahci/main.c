@@ -642,7 +642,7 @@ static size_t __ahci_read(fs_node* dev, size_t start, size_t bytes, uint8_t* buf
 		originalSize = sectors * ATA_SECTOR_SIZE;
 	}
 
-	memcpy(buffer, tmp + (originalOffset - start % ATA_SECTOR_SIZE), originalSize);
+	memcpy(buffer, tmp + (start % ATA_SECTOR_SIZE), originalSize);
 	k_mem_free_dma(tmp, bytes);
 
     k_process_wakeup_queue(d->cmd_waiters);

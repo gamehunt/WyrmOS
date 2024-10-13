@@ -61,7 +61,7 @@ static int __load_font() {
     );
     /* allocate memory for translation table */
     __unicode = calloc(0xFFFF, 2);
-    while(s > _binary____kernel_font_psf_end) {
+    while((uintptr_t) s < (uintptr_t) &_binary____kernel_font_psf_end) {
         uint16_t uc = (uint16_t)((unsigned char *)s[0]);
         if(uc == 0xFF) {
             glyph++;
@@ -101,15 +101,20 @@ static void __char(fb_info* info, uint32_t ox, uint32_t oy, uint16_t c) {
 
     uint8_t* glyph = (((uint8_t*) __font) + __font->headersize + c * __font->bytesperglyph);
 
+    if((uintptr_t) glyph >= (uintptr_t) &_binary____kernel_font_psf_end) {
+        glyph = NULL;
+    }
+
     for (uint32_t y = 0; y < __font->height; y++) {
         for (uint32_t x = 0; x < __font->width; x++) {
-            uint32_t glyph_row = glyph[y];
-
-            if (glyph_row & (1 << (__font->width - x))) {
-                __pixel(info, ox + x, oy + y, 0x00FFFFFF);
-            } else {
-                __pixel(info, ox + x, oy + y, 0x00000000);
-            }
+            uint32_t color = 0x00FFFFFF;
+            if(glyph) {
+                uint32_t glyph_row = glyph[y];
+                if (!(glyph_row & (1 << (__font->width - x)))) {
+                    color = 0;
+                }
+            } 
+            __pixel(info, ox + x, oy + y, color);
         }
     }
 }

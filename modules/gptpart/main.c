@@ -24,7 +24,7 @@ typedef struct {
     uint32_t entry_size;
     uint32_t part_table_checksum;
     uint8_t  pad[512 - 0x5C];
-} gpt_header;
+} __attribute__((packed)) gpt_header;
 
 typedef struct {
     char type_guid[16];
@@ -35,8 +35,32 @@ typedef struct {
     char name[];
 } gpt_part_entry;
 
-static fs_node* __create_patrition_for(fs_node* dev) {
+typedef struct {
+    fs_node*        dev;
+    gpt_part_entry* part;
+} gpt_part_meta;
 
+static size_t __gpt_read(fs_node* dev, size_t offset, size_t size, uint8_t* buff) {
+    gpt_part_meta* meta = dev->meta;
+    return k_fs_read(meta->dev, meta->part->start * 512 + offset, size, buff);
+}
+
+static size_t __gpt_write(fs_node* dev, size_t offset, size_t size, uint8_t* buff) {
+    gpt_part_meta* meta = dev->meta;
+    return k_fs_write(meta->dev, meta->part->start * 512 + offset, size, buff);
+}
+
+static fs_node* __create_patrition_for(fs_node* dev, gpt_part_entry* ent, int n) {
+    char name[32] = {0};
+    snprintf(name, 32, "%s%d", dev->name, n);
+    fs_node* res = k_fs_alloc_fsnode(name);
+    gpt_part_meta* meta = malloc(sizeof(gpt_part_meta));
+    meta->dev  = dev;
+    meta->part = ent;
+    res->meta = meta;
+    res->ops.read  = __gpt_read;
+    res->ops.write = __gpt_write;
+    return res;
 }
 
 static int __probe_device(fs_node* dev) {
@@ -48,22 +72,34 @@ static int __probe_device(fs_node* dev) {
     }
 
     if(memcmp(header.signature, "EFI PART", 8) != 0) {
-        k_debug("Signature mismatch: %.8s", header.signature);
+        k_debug("Signature mismatch.", header.signature);
         return 0;
     }
 
-    k_debug("Found GPT partition. Partition amount: %d", header.part_n);
+    k_debug("Found GPT header.");
+    k_debug("Revision: 0x%.4x", header.rev);
 
     size_t bytes_required = header.entry_size * header.part_n;
-    gpt_part_entry* entries = malloc(bytes_required);
+    void* entries = malloc(bytes_required);
     size_t read = k_fs_read(dev, 1024, bytes_required, (void*) entries);
     if(read != bytes_required) {
         k_error("Failed to read patritions.");
         return 0;
     }
 
+    int n = 1;
     for(unsigned int i = 0; i < header.part_n; i++) {
-        k_debug("%.16s %ld - %ld", entries[i].uniq_guid, entries[i].start, entries[i].end);
+        gpt_part_entry* entry = entries;
+        if(entry->type_guid[0] == '\0') {
+            continue;
+        }
+        k_debug("patrition: %ld - %ld", entry->start, entry->end);
+        fs_node* p = __create_patrition_for(dev, entry, n);
+        char path[128] = {0};
+        snprintf(path, 128, "/dev/%s", p->name);
+        k_fs_mount_node(path, p);
+        entries += header.entry_size;
+        n++;
     }
 
     return 1;
