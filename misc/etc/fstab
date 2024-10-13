@@ -1,0 +1,2 @@
+/dev/sda1 /boot fat
+/dev/sda2 /     ext4

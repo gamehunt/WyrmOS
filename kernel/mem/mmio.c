@@ -48,8 +48,7 @@ void* k_mem_iomap(uintptr_t phys, size_t size) {
     }
     void* r = __try_get_present(phys);
     if(r) {
-        UNLOCK(__iomap_lock);
-        return r;
+        goto end;
     }
     size_t pages = PAGES(size);
     r = (void*) __mmio_start;
@@ -59,6 +58,7 @@ void* k_mem_iomap(uintptr_t phys, size_t size) {
     region->phys = phys;
     region->addr = r;
     list_push_back(__iomapped_regions, region);
+end:
     UNLOCK(__iomap_lock);
     return r;
 }

@@ -58,12 +58,12 @@ arch_define   = ''.join('-D__', tgt_arch.to_upper(), '__')
 kernel_includes = include_directories('kernel/include')
 kernel_arch_includes = include_directories('kernel' / arch_includes)
 
-
 subdir('lib')
 subdir('kernel')
 subdir('modules')
 subdir('user')
 
+meson.add_install_script('install_configs.sh')
 meson.add_install_script('initrd.sh')
 meson.add_install_script('sync-image.sh')
 

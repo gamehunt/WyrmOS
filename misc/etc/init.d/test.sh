@@ -1,0 +1,3 @@
+#!/bin/wsh
+
+echo TEST
