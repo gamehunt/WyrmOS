@@ -17,6 +17,7 @@ user_srcs = [
   'stdlib/env.c',
   'wyrm/syscall.asm',
   'sys/mman.c',
+  'sys/wait.c',
   'signal.c',
   'fcntl.c',
   'dirent.c',

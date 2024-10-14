@@ -161,6 +161,10 @@ static int sys_munmap(uintptr_t start, size_t size) {
     return 0;
 }
 
+static int sys_waitpid(pid_t pid, int* status, int opts) {
+    return k_process_waitpid(pid, status, opts);
+}
+
 typedef int (*syscall_handler)(uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, uintptr_t e, uintptr_t f);
 static const syscall_handler __syscall_table[] = {
     [SYS_OPEN]    = (syscall_handler) sys_open,
@@ -178,6 +182,7 @@ static const syscall_handler __syscall_table[] = {
     [SYS_READDIR] = (syscall_handler) sys_readdir,
     [SYS_EXEC]    = (syscall_handler) sys_exec,
     [SYS_CLOSE]   = (syscall_handler) sys_close,
+    [SYS_WAITPID] = (syscall_handler) sys_waitpid,
     [__SYS_TEST]  = (syscall_handler) sys_test
 };
 

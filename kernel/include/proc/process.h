@@ -14,6 +14,9 @@
 #define PROCESS_FINISHED (1 << 1)
 #define PROCESS_SLEEPING (1 << 2)
 
+#define PROCESS_WAITPID_WNOHANG   (1 << 0)
+#define PROCESS_WAITPID_WUNTRACED (1 << 1)
+
 #define is_ready(p)  (p->ready_node->owner != NULL)
 #define is_locked(p) (p->sleep_node->owner != NULL)
 
@@ -47,6 +50,7 @@ typedef struct {
 	list_node* list_node;
 	list_node* ready_node;
     list_node* sleep_node;
+    list*      wait_queue;
 } process;
 
 #define pending(prc) prc->pending_signals
@@ -84,6 +88,7 @@ void      k_process_switch(int flags);
 void      k_process_schedule_next();
 void      k_process_set_core(struct core* addr);
 void      k_process_exit(int code);
+void      k_process_destroy(process* prc);
 int       k_process_open_file(fs_node* node);
 int       k_process_close_file(unsigned int fd);
 fd_entry* k_process_get_file(unsigned int fd);
@@ -92,7 +97,7 @@ int       k_process_handle_signal(int sig, regs* r);
 void      k_process_exit_signal(regs* r);
 void      k_process_invoke_signals(regs* r);
 void      k_process_update_timings();
-
+pid_t     k_process_waitpid(int pid, int* status, int options);
 void      k_process_sleep_on_queue(list* queue);
 void      k_process_wakeup_queue(list* queue);
 void      k_process_sleep(uint64_t seconds, uint64_t subseconds);

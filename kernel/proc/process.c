@@ -172,6 +172,7 @@ process* k_process_create(const char* name) {
     p->tree_node  = tree_create(p);
     p->ready_node = list_create_node(p);
     p->sleep_node = list_create_node(p);
+    p->wait_queue = list_create();
 	return p;
 }
 
@@ -241,8 +242,16 @@ void k_process_exit(int code) {
             current_core->current_process->name, 
             current_core->current_process->pid,
             code);
-    current_core->current_process->flags  = PROCESS_FINISHED;
-    current_core->current_process->status = code;
+    process* prc = current_core->current_process;
+    prc->flags  = PROCESS_FINISHED;
+    prc->status = code;
+	if(prc->tree_node->parent) {
+		process* parent = prc->tree_node->parent->value;
+		if(parent) {
+			k_process_wakeup_queue(parent->wait_queue);
+			k_process_send_signal(parent->pid, SIGCHLD);
+		}
+	}
     k_process_schedule_next();
 }
 
@@ -467,4 +476,59 @@ void k_process_sleep(uint64_t seconds, uint64_t subseconds) {
 
 end:
     UNLOCK(__sleep_lock);
+}
+
+uint8_t __waitpid_can_pick(process* proc, process* parent, int pid) {
+	if(pid < -1) {
+		return proc->pid == -pid;
+	} else if(pid == 0) {
+		return 0; // -- TODO process->group_id == parent->group_id; 
+	} else if(pid > 0) {
+		return proc->pid == pid;
+	} else {
+		return 1;
+	}
+}
+
+pid_t k_process_waitpid(int pid, int* status, int options) {
+	if(options > PROCESS_WAITPID_WUNTRACED) {
+		return -1;
+	}
+
+    process* proc = current_core->current_process;
+
+	do {
+		process* child = 0;
+		uint8_t was = 0;
+		foreach(c, proc->tree_node->children) {
+			process* candidate = c->value;
+			if(__waitpid_can_pick(candidate, proc, pid)) {
+				was = 1;
+				if(candidate->flags == PROCESS_FINISHED) {
+					child = candidate;
+					break;
+				}	
+			}
+		}
+
+		if(!was) {
+			return -2;
+		}
+		
+		if(child) {
+			if(status && validate_ptr(status, sizeof(uintptr_t))){
+				*status = child->status;
+			}
+			k_process_destroy(child);
+			return child->pid;
+		} else if(!(options & PROCESS_WAITPID_WNOHANG)) {
+			k_process_sleep_on_queue(proc->wait_queue);
+		} else{
+			return -3;
+		}
+	} while(1);
+}
+
+void k_process_destroy(process* process) {
+    // TODO
 }

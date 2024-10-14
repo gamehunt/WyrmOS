@@ -18,6 +18,7 @@
 #define SYS_SEEK    12
 #define SYS_READDIR 13
 #define SYS_EXEC    14
+#define SYS_WAITPID 15
 
 #define __SYS_TEST 0xFF
 
@@ -47,6 +48,7 @@ extern int __invoke_syscall(uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, 
 #define __sys_seek(fd, off, origin)             INVOKE_SYSCALL3(SYS_SEEK, fd, off, origin)
 #define __sys_readdir(fd, index, out)           INVOKE_SYSCALL3(SYS_READDIR, fd, index, out)
 #define __sys_exec(path, argv, envp)            INVOKE_SYSCALL3(SYS_EXEC, path, argv, envp)
+#define __sys_waitpid(pid, status, opts)        INVOKE_SYSCALL3(SYS_WAITPID, pid, status, opts)
 
 #endif
 
