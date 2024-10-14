@@ -11,7 +11,7 @@ int exec_script(const char* script) {
     pid_t pid = fork();
 
     if(!pid) {
-        char* const argv[] = {script, NULL};
+        char* const argv[] = {NULL};
         execv(script, argv);
         printf("Failed to execute: %s", script);
         exit(1);

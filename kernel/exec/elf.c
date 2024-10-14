@@ -1,6 +1,8 @@
 #include <arch.h>
 #include "dev/log.h"
 #include "exec/module.h"
+#include "fcntl.h"
+#include "fs/fs.h"
 #include "mem/mem.h"
 #include "mem/paging.h"
 #include "proc/process.h"
@@ -198,7 +200,22 @@ struct module_info* k_elf_load_module(void* elf) {
 #undef  k_debug
 #define k_debug(fmt, ...) 
 extern void __attribute__((noreturn)) __usr_jmp(uintptr_t entry, uintptr_t stack);
-int k_elf_exec(void* elf, int argc, const char** argv, char** envp) {
+int k_elf_exec(const char* path, int argc, const char** argv, char** envp) {
+    fs_node* exec = k_fs_open(path, O_RDONLY);
+    if(!exec) {
+        k_error("No such file: %s", path);
+        return -1;
+    }
+
+    void* elf = malloc(exec->size);
+    size_t r = k_fs_read(exec, 0, exec->size, elf);
+    k_fs_close(exec);
+    if(r < exec->size) {
+        k_error("Failed to read: %s", path);
+        free(elf);
+        return -1;
+    }
+
 	uint8_t version = k_elf_check(elf);
 	if(version != ELF_CLASS64) {
 		k_error("Invalid e_ident: %d", version);

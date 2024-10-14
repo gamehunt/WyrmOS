@@ -251,6 +251,6 @@ typedef struct
 
 uint8_t             k_elf_check(void* elf);
 struct module_info* k_elf_load_module(void* elf);
-int                 k_elf_exec(void* file, int argc, const char** argv, char** envp);
+int                 k_elf_exec(const char* path, int argc, const char** argv, char** envp);
 
 #endif

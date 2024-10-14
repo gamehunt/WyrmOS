@@ -2,10 +2,10 @@
 #define __K_EXEC_H 1
 
 #include <stddef.h>
+#include "fs/fs.h"
 
-/* Executor should clean data itself before proceeding further */
-typedef int(*exec_func)(void* data, int argc, const char** argv, char** envp);
-typedef int(*fmt_checker)(void* data, size_t size);
+typedef int(*exec_func)(const char* path, int argc, const char** argv, char** envp);
+typedef int(*fmt_checker)(fs_node* file);
 
 typedef struct {
     exec_func   func;
