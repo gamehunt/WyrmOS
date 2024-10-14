@@ -229,10 +229,6 @@ void k_process_init() {
 	__process_tree  = init->tree_node;
 	current_core->current_process = init;
 
-    k_process_open_file(k_fs_open("/dev/log", O_RDONLY));
-    k_process_open_file(k_fs_open("/dev/log", O_WRONLY));
-    k_process_open_file(k_fs_open("/dev/log", O_WRONLY));
-
     k_proc_init_cores();
 }
 
