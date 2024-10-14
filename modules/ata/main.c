@@ -154,11 +154,11 @@ int load() {
         __ata_init(&__ata_devices[i]);
     }
 
-	k_info("Module loaded!");
-	return 0;
+    k_info("Module loaded!");
+    return 0;
 }
 
 int unload() {
-	k_info("Module unloaded!");
-	return 0;
+    k_info("Module unloaded!");
+    return 0;
 }

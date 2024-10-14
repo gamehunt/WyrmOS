@@ -123,10 +123,10 @@ int load() {
         __sd_letter++;
     }
     k_info("Module loaded!");
-	return 0;
+    return 0;
 }
 
 int unload() {
-	k_info("Module unloaded!");
-	return 0;
+    k_info("Module unloaded!");
+    return 0;
 }
