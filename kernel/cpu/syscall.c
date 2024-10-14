@@ -50,23 +50,23 @@ static int sys_read(unsigned int fd, size_t size, void* buffer) {
 }
 
 static int sys_seek(unsigned int fd, off_t offset, uint8_t origin) {
-	fd_entry* file = k_process_get_file(fd);
-	if(!file) {
-		return -1;
-	}
-	switch(origin) {
-		case SEEK_CUR:
-			file->offset += offset;
-			break;
-		case SEEK_SET:
-			file->offset = offset;
-			break;
-		case SEEK_END:
-			file->offset = file->node->size + offset;
-			break;
-	}
+    fd_entry* file = k_process_get_file(fd);
+    if(!file) {
+        return -1;
+    }
+    switch(origin) {
+        case SEEK_CUR:
+            file->offset += offset;
+            break;
+        case SEEK_SET:
+            file->offset = offset;
+            break;
+        case SEEK_END:
+            file->offset = file->node->size + offset;
+            break;
+    }
 
-	return file->offset;
+    return file->offset;
 }
 
 static int sys_close(unsigned int fd) {
@@ -78,10 +78,10 @@ static int sys_readdir(int fd, long index, struct dirent* out) {
         return -1;
     }
     fd_entry* entr = k_process_get_file(fd);
-	if(!entr) {
-		return -1;
-	}
-	return k_fs_readdir(entr->node, out, index);
+    if(!entr) {
+        return -1;
+    }
+    return k_fs_readdir(entr->node, out, index);
 }
 
 static int sys_fork() {
@@ -189,9 +189,9 @@ static const syscall_handler __syscall_table[] = {
 static const size_t __syscall_amount = sizeof(__syscall_table) / sizeof(syscall_handler);
 
 int k_invoke_syscall(uint64_t n, uintptr_t a, uintptr_t b, uintptr_t c, uintptr_t d, uintptr_t e, uintptr_t f) {
-	if(n >= __syscall_amount || !__syscall_table[n]) {
-		k_warn("Invalid syscall: %ld", n);
-		return -1;
-	}	
+    if(n >= __syscall_amount || !__syscall_table[n]) {
+        k_warn("Invalid syscall: %ld", n);
+        return -1;
+    }   
     return __syscall_table[n](a, b, c, d, e, f);
 }

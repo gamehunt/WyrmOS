@@ -88,11 +88,11 @@ int k_exec(const char* path, int argc, const char** argv, char** envp) {
         return -1;
     }
 
-	fs_node* exec = k_fs_open(path, O_RDONLY);
-	if(!exec) {
+    fs_node* exec = k_fs_open(path, O_RDONLY);
+    if(!exec) {
         k_error("Exec not found: %s", path);
-		return -1;
-	}
+        return -1;
+    }
 
     exec_func exec_f = __find_func_for_format(exec);
     k_fs_close(exec);
@@ -101,5 +101,5 @@ int k_exec(const char* path, int argc, const char** argv, char** envp) {
         return -1;
     }
 
-	return exec_f(path, argc, argv, envp);
+    return exec_f(path, argc, argv, envp);
 }

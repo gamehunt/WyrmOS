@@ -40,7 +40,7 @@ static const uint8_t __signal_defaults[] = {
     [SIGABRT] = SIG_ACT_TERMINATE, 
     [SIGTERM] = SIG_ACT_TERMINATE,
     [SIGSEGV] = SIG_ACT_TERMINATE,
-	[SIGCHLD] = SIG_ACT_IGNORE
+    [SIGCHLD] = SIG_ACT_IGNORE
 };
 
 static void __dump_process(volatile context* ctx) {
@@ -57,13 +57,13 @@ static void __dump_process(volatile context* ctx) {
 }
 
 static void __k_proc_load_context(volatile context* ctx) {
-	k_mem_paging_set_pml(ctx->pml);
-	arch_set_kernel_stack((uintptr_t) ctx->kernel_stack);
+    k_mem_paging_set_pml(ctx->pml);
+    arch_set_kernel_stack((uintptr_t) ctx->kernel_stack);
 
-	asm volatile ("" ::: "memory");
+    asm volatile ("" ::: "memory");
 
-	arch_load_ctx(ctx);
-	__builtin_unreachable();
+    arch_load_ctx(ctx);
+    __builtin_unreachable();
 }
 
 static pid_t __get_pid() {
@@ -97,22 +97,22 @@ void k_process_make_ready(process* p) {
 void k_process_schedule_next() {
     process* prc = k_process_get_ready();
     current_core->current_process = prc;
-	__k_proc_load_context(&current_core->current_process->ctx);
+    __k_proc_load_context(&current_core->current_process->ctx);
 }
 
 void k_process_switch(int flags) {
-	if(current_core->current_process == current_core->idle_process) {
+    if(current_core->current_process == current_core->idle_process) {
         k_warn("Preempted from idle process. Probably not a good thing.");
         goto next;
-	}
+    }
 
     if(current_core->current_process->flags & PROCESS_FINISHED) {
         goto next;
     }
 
-	if(arch_save_ctx(&current_core->current_process->ctx)) {
-		return; // Return from switch
-	}
+    if(arch_save_ctx(&current_core->current_process->ctx)) {
+        return; // Return from switch
+    }
 
     if(flags & SWITCH_RESCHEDULE) {
         k_process_make_ready((process*) current_core->current_process); 
@@ -123,48 +123,48 @@ next:
 }
 
 static void* __k_process_alloc_kernel_stack() {
-	void* mem = (kmalloc_aligned(KERNEL_STACK_SIZE, 16));
-	memset(mem, 0, KERNEL_STACK_SIZE);
-	return mem + KERNEL_STACK_SIZE;
+    void* mem = (kmalloc_aligned(KERNEL_STACK_SIZE, 16));
+    memset(mem, 0, KERNEL_STACK_SIZE);
+    return mem + KERNEL_STACK_SIZE;
 }
 
 static process* __k_process_create_init() {
-	process* prc = k_process_create("[init]");
+    process* prc = k_process_create("[init]");
     prc->flags   = PROCESS_RUNNING;
-	prc->ctx.pml = k_mem_paging_clone_pml(NULL);
-	return prc;
+    prc->ctx.pml = k_mem_paging_clone_pml(NULL);
+    return prc;
 }
 
 static void __k_process_idle_routine(void) {
-	while(1) {
+    while(1) {
         asm volatile(
              "sti\n"
              "hlt\n"
              "cli\n"
         );
         k_process_schedule_next();
-	}
+    }
 }
 
 process* k_process_create_idle() {
-	process* prc = k_process_create("[idle]");
+    process* prc = k_process_create("[idle]");
 
     prc->flags   = PROCESS_RUNNING;
 
-	prc->pid     = -1;
-	prc->ctx.rip = (uintptr_t) &__k_process_idle_routine;
-	prc->ctx.rsp = (uintptr_t) prc->ctx.kernel_stack;
-	prc->ctx.rbp = (uintptr_t) prc->ctx.kernel_stack;
-	prc->ctx.pml = k_mem_paging_get_root_pml();
+    prc->pid     = -1;
+    prc->ctx.rip = (uintptr_t) &__k_process_idle_routine;
+    prc->ctx.rsp = (uintptr_t) prc->ctx.kernel_stack;
+    prc->ctx.rbp = (uintptr_t) prc->ctx.kernel_stack;
+    prc->ctx.pml = k_mem_paging_get_root_pml();
 
-	return prc;
+    return prc;
 }
 
 process* k_process_create(const char* name) {
-	process* p = malloc(sizeof(process));
-	memset((void*) p, 0, sizeof(process));
-	strncpy((char*) p->name, name, PROCESS_NAME_LENGTH);
-	p->ctx.kernel_stack = __k_process_alloc_kernel_stack();
+    process* p = malloc(sizeof(process));
+    memset((void*) p, 0, sizeof(process));
+    strncpy((char*) p->name, name, PROCESS_NAME_LENGTH);
+    p->ctx.kernel_stack = __k_process_alloc_kernel_stack();
     p->fds        = list_create();
     p->mmap_start = MMAP_START;
     p->mmap       = list_create();
@@ -174,18 +174,18 @@ process* k_process_create(const char* name) {
     p->sleep_node = list_create_node((void*) p);
     p->wait_queue = list_create();
     p->wait_lock  = EMPTY_LOCK;
-	return p;
+    return p;
 }
 
 void k_process_spawn(process* p, process* parent) {
     LOCK(__process_list_lock);
 
-	list_append(__process_list, p->list_node);
-	p->pid       = __get_pid();
+    list_append(__process_list, p->list_node);
+    p->pid       = __get_pid();
 
-	if(parent) {
-		tree_append_child(parent->tree_node, p->tree_node);
-	} 
+    if(parent) {
+        tree_append_child(parent->tree_node, p->tree_node);
+    } 
 
     k_debug("%s (%d) spawned", p->name, p->pid);
 
@@ -226,17 +226,17 @@ pid_t k_process_fork() {
 }
 
 void k_process_init() {
-	__process_list = list_create();
-	__ready_queue  = list_create();
+    __process_list = list_create();
+    __ready_queue  = list_create();
     __sleep_queue  = list_create();
 
-	process* init = __k_process_create_init();
-	k_process_spawn(init, NULL);
+    process* init = __k_process_create_init();
+    k_process_spawn(init, NULL);
 
-	current_core->idle_process = k_process_create_idle();
+    current_core->idle_process = k_process_create_idle();
 
-	__process_tree  = init->tree_node;
-	current_core->current_process = init;
+    __process_tree  = init->tree_node;
+    current_core->current_process = init;
 
     k_proc_init_cores();
 }
@@ -253,20 +253,20 @@ void k_process_exit(int code) {
     process* prc = current_core->current_process;
     prc->flags  = PROCESS_FINISHED;
     prc->status = code;
-	for(size_t i = 0; i < prc->fds->size; i++) {
-		k_process_close_file(i);
-	}
-	foreach(mbl, prc->mmap) {
-		k_mem_unmap_block(mbl->value);
-	}
-	list_clear(prc->mmap);
-	if(prc->tree_node->parent) {
-		process* parent = prc->tree_node->parent->value;
-		if(parent) {
-			k_process_wakeup_queue(parent->wait_queue);
-			k_process_send_signal(parent->pid, SIGCHLD);
-		}
-	}
+    for(size_t i = 0; i < prc->fds->size; i++) {
+        k_process_close_file(i);
+    }
+    foreach(mbl, prc->mmap) {
+        k_mem_unmap_block(mbl->value);
+    }
+    list_clear(prc->mmap);
+    if(prc->tree_node->parent) {
+        process* parent = prc->tree_node->parent->value;
+        if(parent) {
+            k_process_wakeup_queue(parent->wait_queue);
+            k_process_send_signal(parent->pid, SIGCHLD);
+        }
+    }
     k_process_schedule_next();
 }
 
@@ -315,25 +315,25 @@ fd_entry* k_process_get_file(unsigned int fd) {
 }
 
 static int __pid_comparator(process* a, pid_t p) {
-	return a->pid != p;
+    return a->pid != p;
 }
 
 process* k_process_get_by_pid(pid_t pid) {
     LOCK(__process_list_lock);
-	list_node* prc = list_find_cmp(__process_list, (void*) pid, (comparator) __pid_comparator);
+    list_node* prc = list_find_cmp(__process_list, (void*) pid, (comparator) __pid_comparator);
     UNLOCK(__process_list_lock);
-	if(prc) {
-		return prc->value;
-	} else {
-		return NULL;
-	}
+    if(prc) {
+        return prc->value;
+    } else {
+        return NULL;
+    }
 }
 
 int k_process_send_signal(pid_t pid, int sig) {
-	process* target = k_process_get_by_pid(pid);
-	if(!target) {
-		return -1;
-	}
+    process* target = k_process_get_by_pid(pid);
+    if(!target) {
+        return -1;
+    }
 
     if(sig < 0 || sig >= NSIG) {
         return -1;
@@ -494,72 +494,72 @@ end:
 }
 
 uint8_t __waitpid_can_pick(process* proc, process* parent, pid_t pid) {
-	if(pid < -1) {
-		return proc->pid == -pid;
-	} else if(pid == 0) {
-		return 0; // -- TODO process->group_id == parent->group_id; 
-	} else if(pid > 0) {
-		return proc->pid == pid;
-	} else {
-		return 1;
-	}
+    if(pid < -1) {
+        return proc->pid == -pid;
+    } else if(pid == 0) {
+        return 0; // -- TODO process->group_id == parent->group_id; 
+    } else if(pid > 0) {
+        return proc->pid == pid;
+    } else {
+        return 1;
+    }
 }
 
 pid_t __attribute__((optimize("O0"))) k_process_waitpid(pid_t pid, int* status, int options) {
-	if(options > PROCESS_WAITPID_WUNTRACED) {
-		return -1;
-	}
+    if(options > PROCESS_WAITPID_WUNTRACED) {
+        return -1;
+    }
 
     volatile process* proc = current_core->current_process;
 
-	do {
-		process* child = NULL;
-		uint8_t was = 0;
+    do {
+        process* child = NULL;
+        uint8_t was = 0;
 
-		LOCK(proc->wait_lock);
-		foreach(c, proc->tree_node->children) {
-			process* candidate = ((tree*)c->value)->value;
-			if(__waitpid_can_pick(candidate, proc, pid)) {
-				was = 1;
-				if(candidate->flags & PROCESS_FINISHED) {
-					child = candidate;
-					break;
-				}	
-			}
-		}
-		UNLOCK(proc->wait_lock);
+        LOCK(proc->wait_lock);
+        foreach(c, proc->tree_node->children) {
+            process* candidate = ((tree*)c->value)->value;
+            if(__waitpid_can_pick(candidate, proc, pid)) {
+                was = 1;
+                if(candidate->flags & PROCESS_FINISHED) {
+                    child = candidate;
+                    break;
+                }   
+            }
+        }
+        UNLOCK(proc->wait_lock);
 
-		if(!was) {
-			return -2;
-		}
+        if(!was) {
+            return -2;
+        }
 
-		if(child) {
-			if(status && validate_ptr(status, sizeof(uintptr_t))){
-				*status = child->status;
-			}
-			pid_t cp = child->pid;
-			k_process_destroy(child);
-			return cp;
-		} else if(!(options & PROCESS_WAITPID_WNOHANG)) {
-			k_process_sleep_on_queue(proc->wait_queue);
-		} else{
-			return -3;
-		}
-	} while(1);
+        if(child) {
+            if(status && validate_ptr(status, sizeof(uintptr_t))){
+                *status = child->status;
+            }
+            pid_t cp = child->pid;
+            k_process_destroy(child);
+            return cp;
+        } else if(!(options & PROCESS_WAITPID_WNOHANG)) {
+            k_process_sleep_on_queue(proc->wait_queue);
+        } else{
+            return -3;
+        }
+    } while(1);
 }
 
 void k_process_destroy(process* prc) {
     assert(prc != current_core->current_process);
-	LOCK(__process_list_lock);
-	list_free(prc->wait_queue);
-	list_free(prc->fds);
-	list_free(prc->mmap);
-	free(prc->ready_node);
-	free(prc->sleep_node);
-	free(prc->ctx.kernel_stack - KERNEL_STACK_SIZE);
-	tree_free(prc->tree_node);
-	list_delete(__process_list, prc->list_node);
-	k_mem_paging_free_pml(prc->ctx.pml);
-	free((void*) prc);
-	UNLOCK(__process_list_lock);
+    LOCK(__process_list_lock);
+    list_free(prc->wait_queue);
+    list_free(prc->fds);
+    list_free(prc->mmap);
+    free(prc->ready_node);
+    free(prc->sleep_node);
+    free(prc->ctx.kernel_stack - KERNEL_STACK_SIZE);
+    tree_free(prc->tree_node);
+    list_delete(__process_list, prc->list_node);
+    k_mem_paging_free_pml(prc->ctx.pml);
+    free((void*) prc);
+    UNLOCK(__process_list_lock);
 }

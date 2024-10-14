@@ -75,7 +75,7 @@ void k_mem_munmap(uintptr_t start, size_t size) {
     
     mmap_block* mbl = bl->value;
     list_delete(current_core->current_process->mmap, bl);
-	k_mem_unmap_block(mbl);
+    k_mem_unmap_block(mbl);
 }
 
 void k_mem_unmap_block(mmap_block* bl) {

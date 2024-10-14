@@ -4,7 +4,7 @@
 #include <symbols.h>
 
 int k_dev_serial_init(uint16_t port) {
-	outb(port + 1, 0x00);    // Disable all interrupts
+    outb(port + 1, 0x00);    // Disable all interrupts
     outb(port + 3, 0x80);    // Enable DLAB (set baud rate divisor)
     outb(port + 0, 0x03);    // Set divisor to 3 (lo byte) 38400 baud
     outb(port + 1, 0x00);    //                  (hi byte)
@@ -49,5 +49,5 @@ void k_dev_serial_write(uint16_t port, char* buff, uint32_t size){
 }
 
 void k_dev_serial_putstr(uint16_t port, const char* buff) {
-	k_dev_serial_write(port, buff, strlen(buff));
+    k_dev_serial_write(port, buff, strlen(buff));
 }

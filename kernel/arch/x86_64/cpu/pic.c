@@ -17,32 +17,32 @@
 #define ICW1_INIT      0x10
 
 #define PIC_WAIT() \
-	do { \
-		/* May be fragile */ \
-		asm volatile("jmp 1f\n\t" \
-		             "1:\n\t" \
-		             "    jmp 2f\n\t" \
-		             "2:"); \
-	} while (0)
+    do { \
+        /* May be fragile */ \
+        asm volatile("jmp 1f\n\t" \
+                     "1:\n\t" \
+                     "    jmp 2f\n\t" \
+                     "2:"); \
+    } while (0)
 
 #define OUTB(port, data) outb(port, data); PIC_WAIT();
 
 void k_cpu_pic_init() {
-	/* Cascade initialization */
-	OUTB(PIC1_COMMAND, ICW1_INIT|ICW1_ICW4); 
-	OUTB(PIC2_COMMAND, ICW1_INIT|ICW1_ICW4); 
+    /* Cascade initialization */
+    OUTB(PIC1_COMMAND, ICW1_INIT|ICW1_ICW4); 
+    OUTB(PIC2_COMMAND, ICW1_INIT|ICW1_ICW4); 
 
-	/* Remap */
-	OUTB(PIC1_DATA, PIC1_OFFSET); 
-	OUTB(PIC2_DATA, PIC2_OFFSET); 
+    /* Remap */
+    OUTB(PIC1_DATA, PIC1_OFFSET); 
+    OUTB(PIC2_DATA, PIC2_OFFSET); 
 
-	/* Cascade identity with slave PIC at IRQ2 */
-	OUTB(PIC1_DATA, 0x04); 
-	OUTB(PIC2_DATA, 0x02); 
+    /* Cascade identity with slave PIC at IRQ2 */
+    OUTB(PIC1_DATA, 0x04); 
+    OUTB(PIC2_DATA, 0x02); 
 
-	/* Request 8086 mode on each PIC */
-	OUTB(PIC1_DATA, 0x01); 
-	OUTB(PIC2_DATA, 0x01); 
+    /* Request 8086 mode on each PIC */
+    OUTB(PIC1_DATA, 0x01); 
+    OUTB(PIC2_DATA, 0x01); 
 
     // Mask everything
     OUTB(PIC1_DATA, 0xFF);
@@ -50,10 +50,10 @@ void k_cpu_pic_init() {
 }
 
 void k_cpu_pic_irq_ack(uint8_t irq) {
-	if (irq >= 8) {
-		outb(PIC2_COMMAND, PIC_EOI);
-	}
-	outb(PIC1_COMMAND, PIC_EOI);
+    if (irq >= 8) {
+        outb(PIC2_COMMAND, PIC_EOI);
+    }
+    outb(PIC1_COMMAND, PIC_EOI);
 }
 
 void k_cpu_pic_mask_irq(uint8_t irq) {

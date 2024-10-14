@@ -40,17 +40,17 @@ static void __init_apic_timer() {
     *(volatile uint32_t*) (__lapic_addr + 0x3E0) = 0x01;
 
     /* Time our APIC timer against the TSC */
-	uint64_t before = arch_get_ticks();
-	*((volatile uint32_t*)(__lapic_addr + 0x380)) = 1000000;
+    uint64_t before = arch_get_ticks();
+    *((volatile uint32_t*)(__lapic_addr + 0x380)) = 1000000;
     while (*((volatile uint32_t*)(__lapic_addr + 0x390))) {;}
-	uint64_t after = arch_get_ticks();
+    uint64_t after = arch_get_ticks();
 
-	uint64_t ms = (after - before) / arch_get_cpu_speed();
-	uint64_t target = 10000000000UL / ms;
+    uint64_t ms = (after - before) / arch_get_cpu_speed();
+    uint64_t target = 10000000000UL / ms;
 
-	*((volatile uint32_t*)(__lapic_addr + 0x3e0)) = 1;
-	*((volatile uint32_t*)(__lapic_addr + 0x320)) = 0x7B | 0x20000;
-	*((volatile uint32_t*)(__lapic_addr + 0x380)) = target;
+    *((volatile uint32_t*)(__lapic_addr + 0x3e0)) = 1;
+    *((volatile uint32_t*)(__lapic_addr + 0x320)) = 0x7B | 0x20000;
+    *((volatile uint32_t*)(__lapic_addr + 0x380)) = target;
 }
 
 extern void __setup_flags();
@@ -65,8 +65,8 @@ static void __init_core(struct limine_smp_info* info) {
     k_process_set_core(&cores[info->extra_argument]);
     k_cpu_int_flush_idt();
 
-	current_core->idle_process    = k_process_create_idle();
-	current_core->current_process = current_core->idle_process;
+    current_core->idle_process    = k_process_create_idle();
+    current_core->current_process = current_core->idle_process;
     k_debug("core %d: ready", current_core->id);
 
     __ap_flag = 0;
@@ -224,18 +224,18 @@ fallback:
 }
 
 void lapic_write(size_t addr, uint32_t value) {
-	*((volatile uint32_t*)(__lapic_addr + addr)) = value;
-	asm volatile ("":::"memory");
+    *((volatile uint32_t*)(__lapic_addr + addr)) = value;
+    asm volatile ("":::"memory");
 }
 
 uint32_t lapic_read(size_t addr) {
-	return *((volatile uint32_t*)(__lapic_addr + addr));
+    return *((volatile uint32_t*)(__lapic_addr + addr));
 }
 
 void lapic_send_ipi(int id, uint32_t ipi) {
-	lapic_write(0x310, id << 24);
-	lapic_write(0x300, ipi);
-	do { asm volatile ("pause" : : : "memory"); } while (lapic_read(0x300) & (1 << 12));
+    lapic_write(0x310, id << 24);
+    lapic_write(0x300, ipi);
+    do { asm volatile ("pause" : : : "memory"); } while (lapic_read(0x300) & (1 << 12));
 }
 
 void lapic_eoi() {
