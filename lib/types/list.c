@@ -4,36 +4,36 @@
 #include <stdlib.h>
 
 list* list_create() {
-	list* r = malloc(sizeof(list));
-	r->head = NULL;
-	r->tail = NULL;
-	r->size = 0;
-	return r;
+    list* r = malloc(sizeof(list));
+    r->head = NULL;
+    r->tail = NULL;
+    r->size = 0;
+    return r;
 }
 
 void list_clear(list* list) {
-	assert(list != NULL);
-	while(list->head) {
-		list_node* next = list->head->next;
-		free(list->head);
-		list->head = next;
-	}
-	list->head = NULL;
-	list->tail = NULL;
-	list->size = 0;
+    assert(list != NULL);
+    while(list->head) {
+        list_node* next = list->head->next;
+        free(list->head);
+        list->head = next;
+    }
+    list->head = NULL;
+    list->tail = NULL;
+    list->size = 0;
 }
 
 void list_free(list* list) {
-	list_clear(list);
-	free(list);
+    list_clear(list);
+    free(list);
 }
 
 static list_node* __list_create_node(void* v) {
-	list_node* node = malloc(sizeof(list_node));
-	node->next  = NULL;
-	node->prev  = NULL;
-	node->value = v;
-	return node;
+    list_node* node = malloc(sizeof(list_node));
+    node->next  = NULL;
+    node->prev  = NULL;
+    node->value = v;
+    return node;
 }
 
 list_node* list_create_node(void* v) {
@@ -41,148 +41,148 @@ list_node* list_create_node(void* v) {
 }
 
 void list_append(list* l, list_node* n) {
-	assert(l != NULL);
-	n->owner = l;
+    assert(l != NULL);
+    n->owner = l;
     n->next  = NULL;
-	if(!l->tail) {
+    if(!l->tail) {
         n->prev = NULL;
-		l->head = n;
-		l->tail = l->head;
-	} else {
-		n->prev = l->tail;
-		l->tail->next = n;
-		l->tail = n;
-	}
-	l->size++;
+        l->head = n;
+        l->tail = l->head;
+    } else {
+        n->prev = l->tail;
+        l->tail->next = n;
+        l->tail = n;
+    }
+    l->size++;
 }
 
 void list_prepend(list* l, list_node* n) {
-	assert(l != NULL);
-	if(!l->head) {
-		list_append(l, n);
+    assert(l != NULL);
+    if(!l->head) {
+        list_append(l, n);
         return;
-	} else {
-		n->owner = l;
+    } else {
+        n->owner = l;
         n->prev = NULL;
-		l->head->prev = n;
-		n->next = l->head;
-		l->head = n;
-	}
-	l->size++;
+        l->head->prev = n;
+        n->next = l->head;
+        l->head = n;
+    }
+    l->size++;
 }
 
 list_node* list_push_back(list* l, void* v) {
-	assert(l != NULL);
-	list_node* n = __list_create_node(v);
-	list_append(l, n);
-	return n;
+    assert(l != NULL);
+    list_node* n = __list_create_node(v);
+    list_append(l, n);
+    return n;
 }
 
 list_node* list_push_front(list* l, void* v) {
-	assert(l != NULL);
-	list_node* n = __list_create_node(v);
-	list_prepend(l, n);
-	return n;
+    assert(l != NULL);
+    list_node* n = __list_create_node(v);
+    list_prepend(l, n);
+    return n;
 }
 list_node* list_pop_back(list* l) {
-	assert(l != NULL);
-	if(!l->tail) {
-		return NULL;
-	}
-	list_node* n = l->tail;
-	l->tail = n->prev;
-	if(n == l->head) {
-		l->head = l->tail;
-	}
-	if(l->tail) {
-		l->tail->next = NULL;
+    assert(l != NULL);
+    if(!l->tail) {
+        return NULL;
+    }
+    list_node* n = l->tail;
+    l->tail = n->prev;
+    if(n == l->head) {
+        l->head = l->tail;
+    }
+    if(l->tail) {
+        l->tail->next = NULL;
     } else {
         l->head = NULL;
     }
-	n->next  	  = NULL;
-	n->prev  	  = NULL;
-	n->owner 	  = NULL;
+    n->next       = NULL;
+    n->prev       = NULL;
+    n->owner      = NULL;
     l->size--;
-	return n;
+    return n;
 }
 
 list_node* list_pop_front(list* l) {
-	assert(l != NULL);
-	if(!l->head) {
-		return NULL;
-	}
-	list_node* n = l->head;
-	l->head = l->head->next;
+    assert(l != NULL);
+    if(!l->head) {
+        return NULL;
+    }
+    list_node* n = l->head;
+    l->head = l->head->next;
     if(l->head) {
-	    l->head->prev = NULL;
+        l->head->prev = NULL;
     } else {
         l->tail = NULL;
     }
     l->size--;
-	n->next  = NULL;
-	n->prev  = NULL;
-	n->owner = NULL;
-	return n;
+    n->next  = NULL;
+    n->prev  = NULL;
+    n->owner = NULL;
+    return n;
 }
 
 list_node* list_get(list* l, size_t i) {
-	assert(l != NULL);
-	if(i >= l->size) {
-		return NULL;
-	}
-	list_node* n = l->head;
-	while(i) {
-		n = n->next;
-		i--;
-	}
-	return n;
+    assert(l != NULL);
+    if(i >= l->size) {
+        return NULL;
+    }
+    list_node* n = l->head;
+    while(i) {
+        n = n->next;
+        i--;
+    }
+    return n;
 }
 
 void* list_get_raw(list* l, size_t i) {
-	assert(l != NULL);
-	list_node* n = list_get(l, i);
-	if(!n) {
-		return NULL;
-	} else {
-		return n->value;
-	}
+    assert(l != NULL);
+    list_node* n = list_get(l, i);
+    if(!n) {
+        return NULL;
+    } else {
+        return n->value;
+    }
 }
 
 void list_remove(list* l, size_t i) {
-	assert(l != NULL);
-	list_node* n = list_get(l, i);
-	if(n) {
-		list_delete(l, n);
-	}
+    assert(l != NULL);
+    list_node* n = list_get(l, i);
+    if(n) {
+        list_delete(l, n);
+    }
 }
 
 void list_delete(list* l, list_node* n) {
-	assert(l != NULL);
-	assert(n->owner == l);
-	if(n->prev) {
-		n->prev->next = n->next;
-	}
-	if(n->next) {
-		n->next->prev = n->prev;
-	}
+    assert(l != NULL);
+    assert(n->owner == l);
+    if(n->prev) {
+        n->prev->next = n->next;
+    }
+    if(n->next) {
+        n->next->prev = n->prev;
+    }
     if(n == l->head) {
         l->head = n->next;
     }
     if(n == l->tail) {
         l->tail = n->prev;
     }
-	free(n);
-	l->size--;
+    free(n);
+    l->size--;
 }
 
 list_node* list_find_cmp(list* l, void* v, comparator cmp) {
-	assert(l != NULL);
-	foreach(e, l) {
-		if(cmp(e->value, v) == 0) {
-			return e;
-		}
-	}
-	return NULL;
+    assert(l != NULL);
+    foreach(e, l) {
+        if(cmp(e->value, v) == 0) {
+            return e;
+        }
+    }
+    return NULL;
 }
 
 void list_swap(list_node* a, list_node* b) {

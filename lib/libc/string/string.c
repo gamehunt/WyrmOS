@@ -5,9 +5,9 @@
 
 size_t strlen(const char *str) 
 {
-	register const char *s;
-	for (s = str; *s; ++s);
-	return(s - str);
+    register const char *s;
+    for (s = str; *s; ++s);
+    return(s - str);
 }
 
 char* strcpy(char* destination, const char* source){
@@ -98,46 +98,46 @@ char* strstr(const char* string, const char* substring) {
     char *a, *b;
     b = substring;
     
-	if (*b == 0) {
-		return string;
+    if (*b == 0) {
+        return string;
     }
 
     for ( ; *string != 0; string += 1) {
-		if (*string != *b) {
-		    continue;
-		}
-		a = string;
-		while (1) {
-		    if (*b == 0) {
-				return string;
-		    }
-		    if (*a++ != *b++) {
-				break;
-		    }
-		}
-		b = substring;
+        if (*string != *b) {
+            continue;
+        }
+        a = string;
+        while (1) {
+            if (*b == 0) {
+                return string;
+            }
+            if (*a++ != *b++) {
+                break;
+            }
+        }
+        b = substring;
     }
 
     return NULL;
 }
 
 char* strnstr(const char* s, const char* find, size_t slen) {
- 	char c, sc;
-	size_t len;
+    char c, sc;
+    size_t len;
 
-	if ((c = *find++) != '\0') {
-		len = strlen(find);
-		do {
-			do {
-				if ((sc = *s++) == '\0' || slen-- < 1)
-					return (NULL);
-			} while (sc != c);
-			if (len > slen)
-				return (NULL);
-		} while (strncmp(s, find, len) != 0);
-		s--;
-	}
-	return ((char *)s);
+    if ((c = *find++) != '\0') {
+        len = strlen(find);
+        do {
+            do {
+                if ((sc = *s++) == '\0' || slen-- < 1)
+                    return (NULL);
+            } while (sc != c);
+            if (len > slen)
+                return (NULL);
+        } while (strncmp(s, find, len) != 0);
+        s--;
+    }
+    return ((char *)s);
 }
 
 #define DICT_LEN 256
@@ -200,88 +200,88 @@ char* strtok(char* srcString, const char* delim){
 }
 
 long strtol(const char *nptr, char **endptr, int base) {
-	const char *s;
-	long acc, cutoff;
-	int c;
-	int neg, any, cutlim;
+    const char *s;
+    long acc, cutoff;
+    int c;
+    int neg, any, cutlim;
 
-	s = nptr;
-	
-	do {
-		c = (unsigned char) *s++;
-	} while (isspace(c));
-	
-	if (c == '-') {
-		neg = 1;
-		c = *s++;
-	} else {
-		neg = 0;
-		if (c == '+')
-			c = *s++;
-	}
+    s = nptr;
+    
+    do {
+        c = (unsigned char) *s++;
+    } while (isspace(c));
+    
+    if (c == '-') {
+        neg = 1;
+        c = *s++;
+    } else {
+        neg = 0;
+        if (c == '+')
+            c = *s++;
+    }
 
-	if ((base == 0 || base == 16) &&
-	    c == '0' && (*s == 'x' || *s == 'X')) {
-		c = s[1];
-		s += 2;
-		base = 16;
-	}
-	
-	if (base == 0)
-		base = c == '0' ? 8 : 10;
+    if ((base == 0 || base == 16) &&
+        c == '0' && (*s == 'x' || *s == 'X')) {
+        c = s[1];
+        s += 2;
+        base = 16;
+    }
+    
+    if (base == 0)
+        base = c == '0' ? 8 : 10;
 
-	cutoff = neg ? LONG_MIN : LONG_MAX;
-	cutlim = cutoff % base;
-	cutoff /= base;
-	if (neg) {
-		if (cutlim > 0) {
-			cutlim -= base;
-			cutoff += 1;
-		}
-		cutlim = -cutlim;
-	}
-	for (acc = 0, any = 0;; c = (unsigned char) *s++) {
-		if (isdigit(c))
-			c -= '0';
-		else if (isalpha(c))
-			c -= isupper(c) ? 'A' - 10 : 'a' - 10;
-		else
-			break;
-		if (c >= base)
-			break;
-		if (any < 0)
-			continue;
-		if (neg) {
-			if (acc < cutoff || (acc == cutoff && c > cutlim)) {
-				any = -1;
-				acc = LONG_MIN;
-				// errno = ERANGE;
-			} else {
-				any = 1;
-				acc *= base;
-				acc -= c;
-			}
-		} else {
-			if (acc > cutoff || (acc == cutoff && c > cutlim)) {
-				any = -1;
-				acc = LONG_MAX;
-				// errno = ERANGE;
-			} else {
-				any = 1;
-				acc *= base;
-				acc += c;
-			}
-		}
-	}
-	if (endptr != 0)
-		*endptr = (char *) (any ? s - 1 : nptr);
-	return (acc);
+    cutoff = neg ? LONG_MIN : LONG_MAX;
+    cutlim = cutoff % base;
+    cutoff /= base;
+    if (neg) {
+        if (cutlim > 0) {
+            cutlim -= base;
+            cutoff += 1;
+        }
+        cutlim = -cutlim;
+    }
+    for (acc = 0, any = 0;; c = (unsigned char) *s++) {
+        if (isdigit(c))
+            c -= '0';
+        else if (isalpha(c))
+            c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+        else
+            break;
+        if (c >= base)
+            break;
+        if (any < 0)
+            continue;
+        if (neg) {
+            if (acc < cutoff || (acc == cutoff && c > cutlim)) {
+                any = -1;
+                acc = LONG_MIN;
+                // errno = ERANGE;
+            } else {
+                any = 1;
+                acc *= base;
+                acc -= c;
+            }
+        } else {
+            if (acc > cutoff || (acc == cutoff && c > cutlim)) {
+                any = -1;
+                acc = LONG_MAX;
+                // errno = ERANGE;
+            } else {
+                any = 1;
+                acc *= base;
+                acc += c;
+            }
+        }
+    }
+    if (endptr != 0)
+        *endptr = (char *) (any ? s - 1 : nptr);
+    return (acc);
 }
 
 char *strdup(const char *str){
     char* buff = malloc(strlen(str) + 1);
     strcpy(buff, str);
-	return buff;
+    return buff;
 }
 
 char *strchr(const char *s, int c){

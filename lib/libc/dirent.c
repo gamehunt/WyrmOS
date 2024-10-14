@@ -24,16 +24,16 @@ DIR* opendir(const char* path) {
 }
 
 struct dirent* readdir(DIR* dir) {
-	static struct dirent result;
-	uint32_t res = __sys_readdir(dir->fd, dir->index, (uintptr_t) &result);
-	dir->index++;
+    static struct dirent result;
+    uint32_t res = __sys_readdir(dir->fd, dir->index, (uintptr_t) &result);
+    dir->index++;
 
-	if(res <= 0) {
-		memset(&result, 0, sizeof(struct dirent));
-		return NULL;
-	}
+    if(res <= 0) {
+        memset(&result, 0, sizeof(struct dirent));
+        return NULL;
+    }
 
-	return &result;
+    return &result;
 }
 
 int  readdir_r(DIR *restrict, struct dirent *restrict, struct dirent **restrict) {

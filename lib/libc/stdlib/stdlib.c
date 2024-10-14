@@ -8,40 +8,40 @@ int abs(int n) {
 }
 
 int atoi(const char* str) {
-	const char* end = str;	
+    const char* end = str;  
 
-	uint8_t neg = 0;
+    uint8_t neg = 0;
 
-	if(*end == '-') {
-		neg = 1;	
-		end++;
-	}
+    if(*end == '-') {
+        neg = 1;    
+        end++;
+    }
 
-	while(*end != '\0' && isdigit(*end)) {
-		end++;
-	}
+    while(*end != '\0' && isdigit(*end)) {
+        end++;
+    }
 
-	end -= 1;
+    end -= 1;
 
-	int r = 0;
-	int e = 1;
-	while(end != str - 1) {
-		r += (*end - '0') * e;
-		e *= 10;
-		end--;
-	}
+    int r = 0;
+    int e = 1;
+    while(end != str - 1) {
+        r += (*end - '0') * e;
+        e *= 10;
+        end--;
+    }
 
-	if(neg) {
-		r = -r;
-	}
+    if(neg) {
+        r = -r;
+    }
 
-	return r;
+    return r;
 }
 
 void abort(void) {
 #ifdef __LIBK
 #include "panic.h"
-	panic(NULL, "abort() called.");
+    panic(NULL, "abort() called.");
 #else
 #include "signal.h"
     raise(SIGABRT); 
