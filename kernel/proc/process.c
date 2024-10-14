@@ -484,7 +484,7 @@ end:
     UNLOCK(__sleep_lock);
 }
 
-uint8_t __waitpid_can_pick(process* proc, process* parent, int pid) {
+uint8_t __waitpid_can_pick(process* proc, process* parent, pid_t pid) {
 	if(pid < -1) {
 		return proc->pid == -pid;
 	} else if(pid == 0) {
