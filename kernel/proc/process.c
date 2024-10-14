@@ -529,7 +529,7 @@ pid_t __attribute__((optimize("O0"))) k_process_waitpid(pid_t pid, int* status, 
 				*status = child->status;
 			}
 			pid_t cp = child->pid;
-			// k_process_destroy(child);
+			k_process_destroy(child);
 			return cp;
 		} else if(!(options & PROCESS_WAITPID_WNOHANG)) {
 			k_process_sleep_on_queue(proc->wait_queue);
@@ -540,13 +540,14 @@ pid_t __attribute__((optimize("O0"))) k_process_waitpid(pid_t pid, int* status, 
 }
 
 void k_process_destroy(process* prc) {
+    assert(prc != current_core->current_process);
 	LOCK(__process_list_lock);
 	list_free(prc->wait_queue);
 	list_free(prc->fds);
 	list_free(prc->mmap);
 	free(prc->ready_node);
 	free(prc->sleep_node);
-	free(prc->ctx.kernel_stack);
+	free(prc->ctx.kernel_stack - KERNEL_STACK_SIZE);
 	tree_free(prc->tree_node);
 	list_delete(__process_list, prc->list_node);
 	k_mem_paging_free_pml(prc->ctx.pml);
