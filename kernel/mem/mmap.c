@@ -75,10 +75,12 @@ void k_mem_munmap(uintptr_t start, size_t size) {
     
     mmap_block* mbl = bl->value;
     list_delete(current_core->current_process->mmap, bl);
+	k_mem_unmap_block(mbl);
+}
 
-    for(size_t i = 0; i < PAGES(size); i++) {
-        k_mem_paging_unmap(mbl->start + i * PAGE_SIZE);
+void k_mem_unmap_block(mmap_block* bl) {
+    for(size_t i = 0; i < PAGES(bl->size); i++) {
+        k_mem_paging_unmap(bl->start + i * PAGE_SIZE);
     }
-
-    free(mbl);
+    free(bl);
 }

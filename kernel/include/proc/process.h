@@ -97,7 +97,7 @@ int       k_process_handle_signal(int sig, regs* r);
 void      k_process_exit_signal(regs* r);
 void      k_process_invoke_signals(regs* r);
 void      k_process_update_timings();
-pid_t     k_process_waitpid(int pid, int* status, int options);
+pid_t     k_process_waitpid(pid_t pid, int* status, int options);
 void      k_process_sleep_on_queue(list* queue);
 void      k_process_wakeup_queue(list* queue);
 void      k_process_sleep(uint64_t seconds, uint64_t subseconds);

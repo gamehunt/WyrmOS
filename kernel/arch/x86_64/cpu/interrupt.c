@@ -120,8 +120,10 @@ void __dispatch_interrupt(regs* r) {
 			return;
 		}
         if(!current_core->current_process || r->cs == 0x08) {
-		    panic(r, "Unhandled interrupt: %s (%d)", isr_desc(r->int_no), r->int_no);
-        } else {
+		    panic(r, "Unhandled exception in kernel: %s (%d)", isr_desc(r->int_no), r->int_no);
+        } else if(current_core->current_process->pid <= 1) {
+		    panic(r, "Unhandled exception in critical process: %s (%d)", isr_desc(r->int_no), r->int_no);
+	    } else {
             k_debug("Exception: %s", isr_desc(r->int_no));
             k_process_send_signal(current_core->current_process->pid, SIGSEGV);
         }

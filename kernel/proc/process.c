@@ -6,6 +6,7 @@
 #include "fs/fs.h"
 #include "mem/alloc.h"
 #include "mem/mem.h"
+#include "mem/mmap.h"
 #include "mem/paging.h"
 #include "proc/smp.h"
 #include "proc/spinlock.h"
@@ -39,7 +40,8 @@ static const uint8_t __signal_defaults[] = {
     [SIGKILL] = SIG_ACT_TERMINATE, 
     [SIGABRT] = SIG_ACT_TERMINATE, 
     [SIGTERM] = SIG_ACT_TERMINATE,
-    [SIGSEGV] = SIG_ACT_TERMINATE
+    [SIGSEGV] = SIG_ACT_TERMINATE,
+	[SIGCHLD] = SIG_ACT_IGNORE
 };
 
 static void __dump_process(volatile context* ctx) {
@@ -179,14 +181,12 @@ process* k_process_create(const char* name) {
 void k_process_spawn(process* p, process* parent) {
     LOCK(__process_list_lock);
 
-	if(parent) {
-		tree_append_child(parent->tree_node, p->tree_node);
-        
-        // p->fds = parent->fds; -- TODO clone fds
-	} 
-
 	list_append(__process_list, p->list_node);
 	p->pid       = __get_pid();
+
+	if(parent) {
+		tree_append_child(parent->tree_node, p->tree_node);
+	} 
 
     k_debug("%s (%d) spawned", p->name, p->pid);
 
@@ -245,6 +245,13 @@ void k_process_exit(int code) {
     process* prc = current_core->current_process;
     prc->flags  = PROCESS_FINISHED;
     prc->status = code;
+	for(int i = 0; i < prc->fds->size; i++) {
+		k_process_close_file(i);
+	}
+	foreach(mbl, prc->mmap) {
+		k_mem_unmap_block(mbl->value);
+	}
+	list_clear(prc->mmap);
 	if(prc->tree_node->parent) {
 		process* parent = prc->tree_node->parent->value;
 		if(parent) {
@@ -399,7 +406,6 @@ void k_process_update_timings() {
         while(p) {
             uint64_t end_secs    = p->sleep_seconds;
             uint64_t end_subsecs = p->sleep_subseconds;
-            // k_debug("%ld %ld %ld %ld", end_secs, end_subsecs, seconds, subseconds);
             if((seconds > end_secs) || 
                     (seconds == end_secs && 
                      subseconds >= end_subsecs)) {
@@ -490,7 +496,7 @@ uint8_t __waitpid_can_pick(process* proc, process* parent, int pid) {
 	}
 }
 
-pid_t k_process_waitpid(int pid, int* status, int options) {
+pid_t k_process_waitpid(pid_t pid, int* status, int options) {
 	if(options > PROCESS_WAITPID_WUNTRACED) {
 		return -1;
 	}
@@ -498,10 +504,11 @@ pid_t k_process_waitpid(int pid, int* status, int options) {
     process* proc = current_core->current_process;
 
 	do {
-		process* child = 0;
+		process* child = NULL;
 		uint8_t was = 0;
+		LOCK(__process_list_lock);
 		foreach(c, proc->tree_node->children) {
-			process* candidate = c->value;
+			process* candidate = ((tree*)c->value)->value;
 			if(__waitpid_can_pick(candidate, proc, pid)) {
 				was = 1;
 				if(candidate->flags == PROCESS_FINISHED) {
@@ -510,17 +517,19 @@ pid_t k_process_waitpid(int pid, int* status, int options) {
 				}	
 			}
 		}
+		UNLOCK(__process_list_lock);
 
 		if(!was) {
 			return -2;
 		}
-		
+
 		if(child) {
 			if(status && validate_ptr(status, sizeof(uintptr_t))){
 				*status = child->status;
 			}
+			pid_t cp = child->pid;
 			k_process_destroy(child);
-			return child->pid;
+			return cp;
 		} else if(!(options & PROCESS_WAITPID_WNOHANG)) {
 			k_process_sleep_on_queue(proc->wait_queue);
 		} else{
@@ -529,6 +538,17 @@ pid_t k_process_waitpid(int pid, int* status, int options) {
 	} while(1);
 }
 
-void k_process_destroy(process* process) {
-    // TODO
+void k_process_destroy(process* prc) {
+	LOCK(__process_list_lock);
+	list_free(prc->wait_queue);
+	list_free(prc->fds);
+	list_free(prc->mmap);
+	free(prc->ready_node);
+	free(prc->sleep_node);
+	free(prc->ctx.kernel_stack);
+	tree_free(prc->tree_node);
+	list_delete(__process_list, prc->list_node);
+	k_mem_paging_free_pml(prc->ctx.pml);
+	free(prc);
+	UNLOCK(__process_list_lock);
 }

@@ -32,13 +32,19 @@ extern union page* __get_pml(uint64_t map);
 extern addr __get_pagefault_address();
 
 static void __handle_pagefault(regs* r) {
-    if(!current_core->current_process || r->cs == 0x08) {
-	    panic(r, "Page fault at %#.16lx.", __get_pagefault_address());
+    if(!current_core->current_process || current_core->current_process->pid <= 1 || r->cs == 0x08) {
     }
+
+    if(!current_core->current_process || r->cs == 0x08) {
+	    panic(r, "Page fault in kernel at %#.16lx.", __get_pagefault_address());
+    } else if(current_core->current_process->pid <= 1) {
+	    panic(r, "Page fault in critical process at %#.16lx.", __get_pagefault_address());
+	} 
 
     if(__get_pagefault_address() == SIG_RET_MAGIC) {
         k_process_exit_signal(r);
     } else {
+		k_debug("Page fault at %#.16lx, rip = %#.16lx", __get_pagefault_address(), r->rip);
         k_process_send_signal(current_core->current_process->pid, SIGSEGV);
     }
 }

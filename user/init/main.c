@@ -40,9 +40,9 @@ int main(int argc, const char** argv) {
             strncat(path, dent->name, 1024);
             int s = exec_script(path);
             if(s != 0) {
-                printf("-- Failed! Code: %d", s);
+                printf("-- Failed! Code: %d\r\n", s);
             } else {
-                printf("-- Ok");
+                printf("-- Ok\r\n");
             }
         }
     }
