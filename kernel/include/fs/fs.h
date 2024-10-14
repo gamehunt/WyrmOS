@@ -28,6 +28,7 @@ typedef struct _fs_node{
 	void*     meta;
 	uint16_t  flags;
 	uint64_t  fsid;
+    uint32_t  links;
 	fs        ops;
 } fs_node;
 

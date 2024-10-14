@@ -210,6 +210,15 @@ pid_t k_process_fork() {
 
     fork->syscall_state = (void*) fork->ctx.rsp;
 
+    foreach(file, cur->fds) {
+        fd_entry* entry = malloc(sizeof(fd_entry));
+        memcpy(entry, file->value, sizeof(fd_entry));
+        if(entry->node) {
+            entry->node->links++;
+        }
+        list_push_back(fork->fds, entry);
+    }
+
     k_process_spawn(fork, cur);
     k_process_make_ready(fork);
 

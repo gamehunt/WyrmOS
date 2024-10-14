@@ -186,10 +186,13 @@ fs_node* k_fs_open(const char* _path, uint16_t flags) {
 }
 
 void k_fs_close(fs_node* node) {
-	if(node->ops.close) {
-		node->ops.close(node);
-	}
-	free(node);
+    node->links--;
+    if(node->links == 0) {
+	    if(node->ops.close) {
+	    	node->ops.close(node);
+	    }
+	    free(node);
+    }
 }
 
 size_t k_fs_read(fs_node* node, size_t offset, size_t bytes, uint8_t* buffer) {
@@ -215,6 +218,7 @@ int k_fs_readdir(fs_node* dir, struct dirent* dn, size_t index) {
 
 fs_node*  k_fs_alloc_fsnode(const char* name) {
 	fs_node* node = malloc(sizeof(fs_node));
+    node->links = 1;
 	memset(node, 0, sizeof(fs_node));
 	strncpy(node->name, name, FS_NODE_NAME_LENGTH);
 	return node;
