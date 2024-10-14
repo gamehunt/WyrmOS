@@ -69,6 +69,10 @@ static int sys_seek(unsigned int fd, off_t offset, uint8_t origin) {
 	return file->offset;
 }
 
+static int sys_close(unsigned int fd) {
+    return k_process_close_file(fd);
+}
+
 static int sys_readdir(int fd, long index, struct dirent* out) {
     if(!validate_ptr(out, sizeof(struct dirent))) {
         return -1;
@@ -173,6 +177,7 @@ static const syscall_handler __syscall_table[] = {
     [SYS_SEEK]    = (syscall_handler) sys_seek,
     [SYS_READDIR] = (syscall_handler) sys_readdir,
     [SYS_EXEC]    = (syscall_handler) sys_exec,
+    [SYS_CLOSE]   = (syscall_handler) sys_close,
     [__SYS_TEST]  = (syscall_handler) sys_test
 };
 

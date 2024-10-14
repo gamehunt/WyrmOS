@@ -251,20 +251,20 @@ void k_process_exit(int code) {
 }
 
 int k_process_open_file(fs_node* node) {
+    fd_entry* f = malloc(sizeof(fd_entry));
+    f->node   = node;
+    f->offset = 0;
     for(size_t i = 0; i < current_core->current_process->fds->size; i++) {
         list_node* free_fd = list_get(current_core->current_process->fds, i);
         if(!free_fd->value) {
-            free_fd->value = node;
+            free_fd->value = f;
+            f->id = i;
             return i;
         }
     }
-    int s = current_core->current_process->fds->size;
-    fd_entry* f = malloc(sizeof(fd_entry));
-    f->id     = s;
-    f->node   = node;
-    f->offset = 0;
+    f->id = current_core->current_process->fds->size;
     list_push_back(current_core->current_process->fds, f);
-    return s;
+    return f->id;
 }
 
 int k_process_close_file(unsigned int fd) {
