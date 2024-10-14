@@ -501,7 +501,7 @@ pid_t k_process_waitpid(pid_t pid, int* status, int options) {
 		return -1;
 	}
 
-    process* proc = current_core->current_process;
+    volatile process* proc = current_core->current_process;
 
 	do {
 		process* child = NULL;
@@ -511,7 +511,7 @@ pid_t k_process_waitpid(pid_t pid, int* status, int options) {
 			process* candidate = ((tree*)c->value)->value;
 			if(__waitpid_can_pick(candidate, proc, pid)) {
 				was = 1;
-				if(candidate->flags == PROCESS_FINISHED) {
+				if(candidate->flags & PROCESS_FINISHED) {
 					child = candidate;
 					break;
 				}	
@@ -528,7 +528,7 @@ pid_t k_process_waitpid(pid_t pid, int* status, int options) {
 				*status = child->status;
 			}
 			pid_t cp = child->pid;
-			k_process_destroy(child);
+			// k_process_destroy(child);
 			return cp;
 		} else if(!(options & PROCESS_WAITPID_WNOHANG)) {
 			k_process_sleep_on_queue(proc->wait_queue);

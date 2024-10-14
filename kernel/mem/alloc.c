@@ -2,7 +2,6 @@
 #include <mem/mem.h>
 #include <mem/paging.h>
 #include <panic.h>
-#include "dev/log.h"
 #include "proc/spinlock.h"
 
 #include <assert.h>
