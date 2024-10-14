@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include "fs/fs.h"
 #include "sys/signal.h"
+#include "proc/spinlock.h"
 
 #define PROCESS_NAME_LENGTH 128
 #define MAX_CORES 32
@@ -30,7 +31,7 @@ typedef struct {
     uintptr_t handler;
 } signal;
 
-typedef struct {
+typedef volatile struct {
 	pid_t      pid;
 	char       name[PROCESS_NAME_LENGTH];
     _Atomic uint16_t flags;
@@ -51,6 +52,7 @@ typedef struct {
 	list_node* ready_node;
     list_node* sleep_node;
     list*      wait_queue;
+    lock       wait_lock;
 } process;
 
 #define pending(prc) prc->pending_signals

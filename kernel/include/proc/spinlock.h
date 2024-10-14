@@ -4,7 +4,6 @@
 #include <stdatomic.h>
 #include <arch.h>
 #include <panic.h>
-#include <proc/process.h>
 
 typedef volatile struct {
     volatile atomic_flag lock;
@@ -26,15 +25,19 @@ typedef volatile struct {
 #endif
 
 #define LOCK(_lock) \
-    LOCK_INIT_CHECK(_lock); \
-    while(atomic_flag_test_and_set_explicit( &_lock.lock, memory_order_acquire)) { \
-        LOCK_CHECK(_lock) \
-        arch_pause(); \
-    }
+    do { \
+        LOCK_INIT_CHECK(_lock); \
+        while(atomic_flag_test_and_set_explicit( &_lock.lock, memory_order_acquire)) { \
+            LOCK_CHECK(_lock) \
+            arch_pause(); \
+        } \
+    } while(0);
 
 #define UNLOCK(_lock) \
-    atomic_flag_clear_explicit( &_lock.lock, memory_order_release );
+    do { \
+        atomic_flag_clear_explicit( &_lock.lock, memory_order_release ); \
+    } while(0);
 
-#define EMPTY_LOCK {.lock = ATOMIC_FLAG_INIT}
+#define EMPTY_LOCK (volatile lock) {.lock = ATOMIC_FLAG_INIT}
 
 #endif

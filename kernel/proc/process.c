@@ -2,7 +2,6 @@
 
 #include "arch.h"
 #include "dev/log.h"
-#include "fcntl.h"
 #include "fs/fs.h"
 #include "mem/alloc.h"
 #include "mem/mem.h"
@@ -81,8 +80,7 @@ process* k_process_get_ready() {
         } else {
             proc = node->value;
         }
-    } while(proc->flags & PROCESS_FINISHED);
-    assert((proc->flags & PROCESS_FINISHED) == 0);
+    } while(proc->flags & (PROCESS_FINISHED));
     proc->flags |= PROCESS_RUNNING;
     UNLOCK(__process_queue_lock);
     return proc;
@@ -164,17 +162,18 @@ process* k_process_create_idle() {
 
 process* k_process_create(const char* name) {
 	process* p = malloc(sizeof(process));
-	memset(p, 0, sizeof(process));
-	strncpy(p->name, name, PROCESS_NAME_LENGTH);
+	memset((void*) p, 0, sizeof(process));
+	strncpy((char*) p->name, name, PROCESS_NAME_LENGTH);
 	p->ctx.kernel_stack = __k_process_alloc_kernel_stack();
     p->fds        = list_create();
     p->mmap_start = MMAP_START;
     p->mmap       = list_create();
-    p->list_node  = list_create_node(p);
-    p->tree_node  = tree_create(p);
-    p->ready_node = list_create_node(p);
-    p->sleep_node = list_create_node(p);
+    p->list_node  = list_create_node((void*) p);
+    p->tree_node  = tree_create((void*) p);
+    p->ready_node = list_create_node((void*) p);
+    p->sleep_node = list_create_node((void*) p);
     p->wait_queue = list_create();
+    p->wait_lock  = EMPTY_LOCK;
 	return p;
 }
 
@@ -195,9 +194,9 @@ void k_process_spawn(process* p, process* parent) {
 
 pid_t k_process_fork() {
     process* cur   = (process*) current_core->current_process;
-    process* fork  = k_process_create(cur->name);
+    process* fork  = k_process_create((char*) cur->name);
 
-    memcpy(fork->signals, cur->signals, sizeof(cur->signals));
+    memcpy((void*) fork->signals, (const void*) cur->signals, sizeof(cur->signals));
 
     fork->ctx.pml  = k_mem_paging_clone_pml(cur->ctx.pml);
     fork->ctx.rsp  = (uintptr_t) fork->ctx.kernel_stack;
@@ -245,7 +244,7 @@ void k_process_exit(int code) {
     process* prc = current_core->current_process;
     prc->flags  = PROCESS_FINISHED;
     prc->status = code;
-	for(int i = 0; i < prc->fds->size; i++) {
+	for(size_t i = 0; i < prc->fds->size; i++) {
 		k_process_close_file(i);
 	}
 	foreach(mbl, prc->mmap) {
@@ -427,6 +426,7 @@ void k_process_update_timings() {
 }
 
 void k_process_sleep_on_queue(list* queue) {
+    assert(queue != NULL);
     if(is_locked(current_core->current_process)) {
         goto end;
     }
@@ -438,7 +438,7 @@ end:
     k_process_switch(0);
 }
 
-void k_process_wakeup_queue(list* queue) {
+void  k_process_wakeup_queue(list* queue) {
     assert(queue != NULL);
     LOCK(__block_lock);
     while(queue->size) {
@@ -496,7 +496,7 @@ uint8_t __waitpid_can_pick(process* proc, process* parent, pid_t pid) {
 	}
 }
 
-pid_t k_process_waitpid(pid_t pid, int* status, int options) {
+pid_t __attribute__((optimize("O0"))) k_process_waitpid(pid_t pid, int* status, int options) {
 	if(options > PROCESS_WAITPID_WUNTRACED) {
 		return -1;
 	}
@@ -506,7 +506,8 @@ pid_t k_process_waitpid(pid_t pid, int* status, int options) {
 	do {
 		process* child = NULL;
 		uint8_t was = 0;
-		LOCK(__process_list_lock);
+
+		LOCK(proc->wait_lock);
 		foreach(c, proc->tree_node->children) {
 			process* candidate = ((tree*)c->value)->value;
 			if(__waitpid_can_pick(candidate, proc, pid)) {
@@ -517,7 +518,7 @@ pid_t k_process_waitpid(pid_t pid, int* status, int options) {
 				}	
 			}
 		}
-		UNLOCK(__process_list_lock);
+		UNLOCK(proc->wait_lock);
 
 		if(!was) {
 			return -2;
@@ -549,6 +550,6 @@ void k_process_destroy(process* prc) {
 	tree_free(prc->tree_node);
 	list_delete(__process_list, prc->list_node);
 	k_mem_paging_free_pml(prc->ctx.pml);
-	free(prc);
+	free((void*) prc);
 	UNLOCK(__process_list_lock);
 }
