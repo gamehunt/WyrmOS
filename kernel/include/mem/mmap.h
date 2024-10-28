@@ -19,5 +19,6 @@ typedef struct {
 mmap_block* k_mem_mmap(uintptr_t start, size_t size, uint8_t flags, int prot, int fd, off_t offset);
 void        k_mem_munmap(uintptr_t start, size_t size);
 void        k_mem_unmap_block(mmap_block* bl);
+mmap_block* k_mem_dup_block(mmap_block* bl);
 
 #endif

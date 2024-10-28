@@ -1,5 +1,6 @@
 #include <mem/mmap.h>
 #include <stdlib.h>
+#include <string.h>
 #include "dev/log.h"
 #include "mem/mem.h"
 #include "mem/paging.h"
@@ -83,4 +84,10 @@ void k_mem_unmap_block(mmap_block* bl) {
         k_mem_paging_unmap(bl->start + i * PAGE_SIZE);
     }
     free(bl);
+}
+
+mmap_block* k_mem_dup_block(mmap_block* bl) {
+    mmap_block* n = malloc(sizeof(mmap_block));
+    memcpy(n, bl, sizeof(mmap_block));
+    return n;
 }

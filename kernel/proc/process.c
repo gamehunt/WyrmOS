@@ -219,6 +219,12 @@ pid_t k_process_fork() {
         list_push_back(fork->fds, entry);
     }
 
+    fork->mmap_start = cur->mmap_start;
+    foreach(e, cur->mmap) {
+        mmap_block* bl = e->value;
+        list_push_back(fork->mmap, k_mem_dup_block(bl));
+    }
+
     k_process_spawn(fork, cur);
     k_process_make_ready(fork);
 
@@ -506,15 +512,10 @@ uint8_t __waitpid_can_pick(process* proc, process* parent, pid_t pid) {
 }
 
 pid_t __attribute__((optimize("O0"))) k_process_waitpid(pid_t pid, int* status, int options) {
-    if(options > PROCESS_WAITPID_WUNTRACED) {
-        return -1;
-    }
-
-    volatile process* proc = current_core->current_process;
-
+    process* proc = current_core->current_process;
     do {
         process* child = NULL;
-        uint8_t was = 0;
+        uint8_t  was   = 0;
 
         LOCK(proc->wait_lock);
         foreach(c, proc->tree_node->children) {
@@ -540,9 +541,9 @@ pid_t __attribute__((optimize("O0"))) k_process_waitpid(pid_t pid, int* status, 
             pid_t cp = child->pid;
             k_process_destroy(child);
             return cp;
-        } else if(!(options & PROCESS_WAITPID_WNOHANG)) {
+        } else if (!(options & PROCESS_WAITPID_WNOHANG)) {
             k_process_sleep_on_queue(proc->wait_queue);
-        } else{
+        } else {
             return -3;
         }
     } while(1);

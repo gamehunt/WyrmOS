@@ -36,8 +36,8 @@ int main(int argc, const char** argv) {
         struct dirent* dent = NULL;
         while((dent = readdir(d)) != NULL) {
             printf("Executing: %s\r\n", dent->name);
-            char path[1024] = "/etc/init.d/";
-            strncat(path, dent->name, 1024);
+            char path[1024] = {0};
+            snprintf(path, 1024, "/etc/init.d/%s", dent->name);
             int s = exec_script(path);
             if(s != 0) {
                 printf("-- Failed! Code: %d\r\n", s);
