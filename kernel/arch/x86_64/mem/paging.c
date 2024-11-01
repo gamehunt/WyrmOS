@@ -11,6 +11,7 @@
 #include "util.h"
 #include <boot/limine.h>
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define PME(addr) ((uint16_t) ((((uint64_t) addr & CANONICAL_MASK) >> 39) & 0x1FF))
@@ -30,11 +31,9 @@ static volatile union page* __root_pml = NULL;
 
 extern union page* __get_pml(uint64_t map);
 extern addr __get_pagefault_address();
+extern void __invlpg(void*);
 
 static void __handle_pagefault(regs* r) {
-    if(!current_core->current_process || current_core->current_process->pid <= 1 || r->cs == 0x08) {
-    }
-
     if(!current_core->current_process || r->cs == 0x08) {
         panic(r, "Page fault in kernel at %#.16lx.", __get_pagefault_address());
     } else if(current_core->current_process->pid <= 1) {
@@ -90,6 +89,7 @@ void k_mem_paging_map_ex(addr vaddr, addr paddr, uint8_t flags) {
             p.bits.nocache  = (flags & PM_FL_NOCACHE)  != 0;
             if(i < 3 || paddr == 0) {
                 p.bits.page = FRAME(k_mem_pmm_alloc(1));
+                memset((void*) TO_VIRTUAL(ADDR(p.bits.page)), 0, PAGE_SIZE);
             } else {
                 p.bits.page = FRAME(paddr);
             }
@@ -137,6 +137,8 @@ void k_mem_paging_unmap(addr vaddr) {
             pg[index].raw = 0;
         }
     }
+
+    __invlpg((void*) vaddr);
 }
 
 uintptr_t k_mem_paging_get_physical(addr _vaddr) {
@@ -263,6 +265,7 @@ void k_mem_paging_free_pml(volatile union page* pml) {
         }
         k_mem_pmm_mark_frame(pml[_pml].bits.page);
     }
+    free((void*) pml);
 }
 int k_mem_validate_pointer(void* ptr, size_t size) {
     uintptr_t start = (uintptr_t) ptr;

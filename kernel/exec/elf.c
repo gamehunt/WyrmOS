@@ -197,8 +197,10 @@ struct module_info* k_elf_load_module(void* elf) {
     return module;
 }
 
+#if 1
 #undef  k_debug
 #define k_debug(fmt, ...) 
+#endif
 extern void __attribute__((noreturn)) __usr_jmp(uintptr_t entry, uintptr_t stack);
 int k_elf_exec(const char* path, int argc, const char** argv, char** envp) {
     fs_node* exec = k_fs_open(path, O_RDONLY);
@@ -248,7 +250,7 @@ int k_elf_exec(const char* path, int argc, const char** argv, char** envp) {
     }
     _envp_copy[envc] = NULL;
 
-    union page* cur = current_core->current_process->ctx.pml;
+    volatile union page* cur = current_core->current_process->ctx.pml;
     current_core->current_process->ctx.pml = k_mem_paging_clone_pml(NULL);
     k_mem_paging_set_pml(current_core->current_process->ctx.pml);
     k_mem_paging_free_pml(cur);

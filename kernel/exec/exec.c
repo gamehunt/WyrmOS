@@ -62,7 +62,6 @@ static int __exec_shebang(const char* file, int argc, const char** argv, char** 
     k_debug("interp: %s", interp);
 
     const char* new_argv[argc + 3];
-    memset(new_argv, 0, sizeof(char*));
 
     new_argv[0] = interp;
     new_argv[1] = file;

@@ -21,6 +21,7 @@ typedef struct _list {
 
 list*      list_create();
 list_node* list_create_node(void*);
+void       list_free_node(list_node*);
 void  list_free(list*);
 void  list_clear(list*);
 

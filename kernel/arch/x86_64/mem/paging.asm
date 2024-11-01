@@ -26,3 +26,8 @@ global __get_pagefault_address
 __get_pagefault_address:
 	mov rax, cr2
 	ret
+
+global __invlpg
+__invlpg:
+    invlpg [rdi]
+    ret

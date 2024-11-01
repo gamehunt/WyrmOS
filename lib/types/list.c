@@ -272,3 +272,11 @@ list_node* list_insert_before(list* l, list_node* p, void* d) {
     l->size++;
     return r;
 }
+
+void list_free_node(list_node* node) {
+    if(node->owner) {
+        list_delete(node->owner, node);
+    } else {
+        free(node);
+    }
+}

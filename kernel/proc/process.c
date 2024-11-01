@@ -80,7 +80,7 @@ process* k_process_get_ready() {
         } else {
             proc = node->value;
         }
-    } while(proc->flags & (PROCESS_FINISHED));
+    } while(proc->flags & PROCESS_FINISHED);
     proc->flags |= PROCESS_RUNNING;
     UNLOCK(__process_queue_lock);
     return proc;
@@ -252,11 +252,7 @@ void k_process_set_core(struct core* c) {
 }
 
 void k_process_exit(int code) {
-    k_debug("%s (%d) exited with code %d", 
-            current_core->current_process->name, 
-            current_core->current_process->pid,
-            code);
-    process* prc = current_core->current_process;
+    process* volatile prc = current_core->current_process;
     prc->flags  = PROCESS_FINISHED;
     prc->status = code;
     for(size_t i = 0; i < prc->fds->size; i++) {
@@ -266,13 +262,18 @@ void k_process_exit(int code) {
         k_mem_unmap_block(mbl->value);
     }
     list_clear(prc->mmap);
+    asm volatile("":::"memory");
     if(prc->tree_node->parent) {
         process* parent = prc->tree_node->parent->value;
-        if(parent) {
-            k_process_wakeup_queue(parent->wait_queue);
+        if(parent && !(parent->flags & PROCESS_FINISHED)) {
             k_process_send_signal(parent->pid, SIGCHLD);
+            k_process_wakeup_queue(parent->wait_queue);
         }
     }
+    k_debug("%s (%d) exited with code %d", 
+            current_core->current_process->name, 
+            current_core->current_process->pid,
+            code);
     k_process_schedule_next();
 }
 
@@ -499,7 +500,8 @@ end:
     UNLOCK(__sleep_lock);
 }
 
-uint8_t __waitpid_can_pick(process* proc, process* parent, pid_t pid) {
+static uint8_t __waitpid_can_pick(process* proc, process* parent, pid_t pid) {
+    assert(proc != NULL);
     if(pid < -1) {
         return proc->pid == -pid;
     } else if(pid == 0) {
@@ -511,15 +513,19 @@ uint8_t __waitpid_can_pick(process* proc, process* parent, pid_t pid) {
     }
 }
 
+// TODO fix
 pid_t __attribute__((optimize("O0"))) k_process_waitpid(pid_t pid, int* status, int options) {
-    process* proc = current_core->current_process;
+    volatile process* volatile proc = current_core->current_process;
     do {
-        process* child = NULL;
+        volatile process* child = NULL;
         uint8_t  was   = 0;
 
         LOCK(proc->wait_lock);
         foreach(c, proc->tree_node->children) {
-            process* candidate = ((tree*)c->value)->value;
+            if(!c->value) {
+                continue;
+            }
+            volatile process* volatile candidate = ((tree*)c->value)->value;
             if(__waitpid_can_pick(candidate, proc, pid)) {
                 was = 1;
                 if(candidate->flags & PROCESS_FINISHED) {
@@ -552,14 +558,14 @@ pid_t __attribute__((optimize("O0"))) k_process_waitpid(pid_t pid, int* status, 
 void k_process_destroy(process* prc) {
     assert(prc != current_core->current_process);
     LOCK(__process_list_lock);
+    list_free_node(prc->ready_node);
+    list_free_node(prc->sleep_node);
+    list_free_node(prc->list_node);
     list_free(prc->wait_queue);
     list_free(prc->fds);
     list_free(prc->mmap);
-    free(prc->ready_node);
-    free(prc->sleep_node);
     free(prc->ctx.kernel_stack - KERNEL_STACK_SIZE);
     tree_free(prc->tree_node);
-    list_delete(__process_list, prc->list_node);
     k_mem_paging_free_pml(prc->ctx.pml);
     free((void*) prc);
     UNLOCK(__process_list_lock);
